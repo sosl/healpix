@@ -1,12 +1,11 @@
 #!/bin/sh
 
-NAME=HealpixCxx-3.1_experimental
-URL=http://svn.code.sf.net/p/healpix/code/trunk/src/cxx
+NAME=HealpixCxx-3.12_experimental
+URL=http://svn.code.sf.net/p/healpix/code/branches/branch_v310r461/src/cxx
 REV=HEAD
 
 svn export -r ${REV} ${URL} ${NAME} &&\
-cd ${NAME} &&\
-mkdir m4 &&\
+cd ${NAME}/autotools &&\
 rm -f Makefile &&\
 autoreconf --install &&\
 ./configure &&\
