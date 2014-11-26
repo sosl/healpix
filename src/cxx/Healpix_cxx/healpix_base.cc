@@ -1271,7 +1271,10 @@ template<typename I> double T_Healpix_Base<I>::max_pixrad(I ring) const
   if (ring<=nside_)
     {
     mypos.set_z_phi(z,pi/(4*ring));
-    return v_angle(mypos,uppos);
+    double v1=v_angle(mypos,uppos);
+    if (ring!=1) return v1;
+    uppos.set_z_phi(ring2z(ring+1),pi/(4*(min(nside_,ring+1))));
+    return max(v1,v_angle(mypos,uppos));
     }
   mypos.set_z_phi(z,0);
   double vdist=v_angle(mypos,uppos);
