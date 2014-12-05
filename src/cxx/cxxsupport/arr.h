@@ -25,7 +25,7 @@
 /*! \file arr.h
  *  Various high-performance array classes used by the Planck LevelS package.
  *
- *  Copyright (C) 2002-2014 Max-Planck-Society
+ *  Copyright (C) 2002-2012 Max-Planck-Society
  *  \author Martin Reinecke
  */
 
@@ -187,7 +187,7 @@ template <typename T, typename storageManager> class arrT: public arr_ref<T>
     /*! Creates a zero-sized array. */
     arrT() : arr_ref<T>(0,0), own(true) {}
     /*! Creates an array with \a sz entries. */
-    explicit arrT(tsize sz) : arr_ref<T>(stm.alloc(sz),sz), own(true) {}
+    arrT(tsize sz) : arr_ref<T>(stm.alloc(sz),sz), own(true) {}
     /*! Creates an array with \a sz entries, and initializes them with
         \a inival. */
     arrT(tsize sz, const T &inival) : arr_ref<T>(stm.alloc(sz),sz), own(true)
@@ -304,7 +304,7 @@ template <typename T>
     /*! Creates a zero-sized array. */
     arr() : arrT<T,normalAlloc__<T> >() {}
     /*! Creates an array with \a sz entries. */
-    explicit arr(tsize sz) : arrT<T,normalAlloc__<T> >(sz) {}
+    arr(tsize sz) : arrT<T,normalAlloc__<T> >(sz) {}
     /*! Creates an array with \a sz entries, and initializes them with
         \a inival. */
     arr(tsize sz, const T &inival) : arrT<T,normalAlloc__<T> >(sz,inival) {}
@@ -333,7 +333,7 @@ template <typename T, int align>
     /*! Creates a zero-sized array. */
     arr_align() : arrT<T,alignAlloc__<T,align> >() {}
     /*! Creates an array with \a sz entries. */
-    explicit arr_align(tsize sz) : arrT<T,alignAlloc__<T,align> >(sz) {}
+    arr_align(tsize sz) : arrT<T,alignAlloc__<T,align> >(sz) {}
     /*! Creates an array with \a sz entries, and initializes them with
         \a inival. */
     arr_align(tsize sz, const T &inival)
@@ -359,10 +359,6 @@ template <typename T, typename storageManager> class arr2T
       : s1(sz1), s2(sz2), d(s1*s2) {}
     /*! Creates an array with the dimensions  \a sz1 and \a sz2
         and initializes them with \a inival. */
-    /*! Creates an array with the dimensions \a sz1 and \a sz2 from existing
-        pointer. */
-    arr2T(T* p, tsize sz1, tsize sz2)
-      : s1(sz1), s2(sz2), d(p, s1*s2) {}
     arr2T(tsize sz1, tsize sz2, const T &inival)
       : s1(sz1), s2(sz2), d (s1*s2)
       { fill(inival); }
@@ -412,10 +408,6 @@ template <typename T, typename storageManager> class arr2T
     /*! Sets all array elements to \a val. */
     void fill (const T &val)
       { for (tsize m=0; m<s1*s2; ++m) d[m]=val; }
-
-    /*! Multiplies all array elements by \a val. */
-    void scale (const T &val)
-      { for (tsize m=0; m<s1*s2; ++m) d[m]*=val; }
 
     /*! Changes the array to be a copy of \a orig. */
     arr2T &operator= (const arr2T &orig)
@@ -479,9 +471,6 @@ template <typename T>
     arr2() : arr2T<T,normalAlloc__<T> > () {}
     /*! Creates an array with the dimensions \a sz1 and \a sz2. */
     arr2(tsize sz1, tsize sz2) : arr2T<T,normalAlloc__<T> > (sz1,sz2) {}
-    /*! Creates an array with the dimensions \a sz1 and \a sz2 from existing
-        pointer. */
-    arr2(T* p, tsize sz1, tsize sz2) : arr2T<T,normalAlloc__<T> > (p,sz1,sz2) {}
     /*! Creates an array with the dimensions  \a sz1 and \a sz2
         and initializes them with \a inival. */
     arr2(tsize sz1, tsize sz2, const T &inival)

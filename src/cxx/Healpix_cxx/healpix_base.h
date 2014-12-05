@@ -15,7 +15,7 @@
  *  along with Healpix_cxx; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 
 /*
@@ -25,7 +25,7 @@
  */
 
 /*! \file healpix_base.h
- *  Copyright (C) 2003-2014 Max-Planck-Society
+ *  Copyright (C) 2003-2012 Max-Planck-Society
  *  \author Martin Reinecke
  */
 
@@ -37,10 +37,6 @@
 #include "pointing.h"
 #include "arr.h"
 #include "rangeset.h"
-
-template<typename I> struct Orderhelper__ {};
-template<> struct Orderhelper__<int> {enum{omax=13};};
-template<> struct Orderhelper__<int64> {enum{omax=29};};
 
 /*! Functionality related to the HEALPix pixelisation. */
 template<typename I> class T_Healpix_Base: public Healpix_Tables
@@ -89,7 +85,7 @@ template<typename I> class T_Healpix_Base: public Healpix_Tables
     typedef I (T_Healpix_Base::*swapfunc)(I pix) const;
 
   public:
-    enum {order_max=Orderhelper__<I>::omax};
+    static const int order_max;
 
     /*! Calculates the map order from its \a N_side parameter.
         Returns -1 if \a nside is not a power of 2.
@@ -203,18 +199,6 @@ template<typename I> class T_Healpix_Base: public Healpix_Tables
         res.set_z_phi (z, phi);
         return res;
         }
-      }
-    /*! Returns the pixel number for this T_Healpix_Base corresponding to the
-        pixel number \a pix in \a b.
-        \note \a b.Nside()\%Nside() must be 0. */
-    I pixel_import (I pix, const T_Healpix_Base &b) const
-      {
-      I ratio = b.nside_/nside_;
-      planck_assert(nside_*ratio==b.nside_,"bad nside ratio");
-      int x, y, f;
-      b.pix2xyf(pix, x, y, f);
-      x/=ratio; y/=ratio;
-      return xyf2pix(x, y, f);
       }
 
     template<typename I2> void query_disc_internal (pointing ptg, double radius,

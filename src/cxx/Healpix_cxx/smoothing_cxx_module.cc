@@ -15,7 +15,7 @@
  *  along with Healpix_cxx; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 
 /*
@@ -25,7 +25,7 @@
  */
 
 /*
- *  Copyright (C) 2005-2013 Max-Planck-Society
+ *  Copyright (C) 2005-2011 Max-Planck-Society
  *  Author: Martin Reinecke
  */
 
@@ -61,10 +61,6 @@ template<typename T> void smoothing_cxx (paramfile &params)
     {
     Healpix_Map<T> map;
     read_Healpix_map_from_fits(infile,map,1,2);
-
-    double avg=map.average();
-    map.Add(T(-avg));
-
     tsize nmod = map.replaceUndefWith0();
     if (nmod!=0)
       cout << "WARNING: replaced " << nmod <<
@@ -74,6 +70,8 @@ template<typename T> void smoothing_cxx (paramfile &params)
     get_ring_weights (params,map.Nside(),weight);
 
     Alm<xcomplex<T> > alm(nlmax,nlmax);
+    double avg=map.average();
+    map.Add(T(-avg));
     if (map.Scheme()==NEST) map.swap_scheme();
 
     map2alm_iter(map,alm,num_iter,weight);
@@ -87,10 +85,6 @@ template<typename T> void smoothing_cxx (paramfile &params)
     {
     Healpix_Map<T> mapT, mapQ, mapU;
     read_Healpix_map_from_fits(infile,mapT,mapQ,mapU);
-
-    double avg=mapT.average();
-    mapT.Add(T(-avg));
-
     tsize nmod = mapT.replaceUndefWith0()+mapQ.replaceUndefWith0()
                 +mapU.replaceUndefWith0();
     if (nmod!=0)
@@ -101,6 +95,8 @@ template<typename T> void smoothing_cxx (paramfile &params)
     get_ring_weights (params,mapT.Nside(),weight);
 
     Alm<xcomplex<T> > almT(nlmax,nlmax), almG(nlmax,nlmax), almC(nlmax,nlmax);
+    double avg=mapT.average();
+    mapT.Add(T(-avg));
     if (mapT.Scheme()==NEST) mapT.swap_scheme();
     if (mapQ.Scheme()==NEST) mapQ.swap_scheme();
     if (mapU.Scheme()==NEST) mapU.swap_scheme();

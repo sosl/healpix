@@ -15,7 +15,7 @@
  *  along with this code; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 package healpix.essentials.test;
 
@@ -132,7 +132,7 @@ public class HealpixProcTest extends TestCase {
         RangeSet rs = HealpixProc.queryDiscRing(o,ptg,rad);
         Vec3 vptg = new Vec3(ptg);
         double cosrad=Math.cos(rad);
-        for (int i=0; i<rs.nranges(); ++i)
+        for (int i=0; i<rs.size(); ++i)
           for (long j=rs.ivbegin(i); j<rs.ivend(i); ++j)
             map[(int)j]=true;
         for (int i=0; i<npix; ++i)
@@ -140,7 +140,7 @@ public class HealpixProcTest extends TestCase {
           boolean inside = vmap[i].dot(vptg)>cosrad;
           assertFalse ("query_disc_strict problem",inside^map[i]);
           }
-        for (int i=0; i<rs.nranges(); ++i)
+        for (int i=0; i<rs.size(); ++i)
           for (long j=rs.ivbegin(i); j<rs.ivend(i); ++j)
             map[(int)j]=false;
         }

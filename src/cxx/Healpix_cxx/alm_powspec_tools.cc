@@ -15,7 +15,7 @@
  *  along with Healpix_cxx; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 
 /*
@@ -25,7 +25,7 @@
  */
 
 /*
- *  Copyright (C) 2003-2014 Max-Planck-Society
+ *  Copyright (C) 2003-2011 Max-Planck-Society
  *  Author: Martin Reinecke
  */
 
@@ -281,27 +281,6 @@ template<typename T> void smoothWithGauss
     gb[l] *= fact_pol;
   almG.ScaleL(gb); almC.ScaleL(gb);
   }
-
-template<typename T> void applyCosineWindow
-  (Alm<xcomplex<T> > &alm, int lmin, int lmax)
-  {
-  planck_assert((lmin>=0)&&(lmax>lmin),"bad lmin/lmax");
-  arr<double> cw(alm.Lmax()+1);
-  for (int i=0; i<int(cw.size()); ++i)
-  if (i<lmin)
-    cw[i]=1;
-  else if (i<lmax)
-    cw[i]=(1+cos(pi*(i-lmin)/double(lmax-lmin)))/2;
-  else
-    cw[i]=0;
-
-  alm.ScaleL(cw);
-  }
-
-template void applyCosineWindow
-  (Alm<xcomplex<float> > &alm, int lmin, int lmax);
-template void applyCosineWindow
-  (Alm<xcomplex<double> > &alm, int lmin, int lmax);
 
 template void smoothWithGauss
   (Alm<xcomplex<float> > &almT,

@@ -22,9 +22,7 @@
  *  (DLR).
  */
 
-/*! \file bluestein.h
- *  Interface for the Bluestein algorithm
- *
+/*
  *  Copyright (C) 2005 Max-Planck-Society
  *  \author Martin Reinecke
  */

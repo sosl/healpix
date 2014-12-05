@@ -25,7 +25,7 @@
 /*! \file rangeset.h
  *  Class for storing sets of ranges of integer numbers
  *
- *  Copyright (C) 2011-2014 Max-Planck-Society
+ *  Copyright (C) 2011, 2012 Max-Planck-Society
  *  \author Martin Reinecke
  */
 
@@ -48,8 +48,6 @@ template<typename T> class rangeset
     typedef typename rtype::const_iterator c_iterator;
     rtype r;
 
-    /*! Returns the index of the last number in \c r which is <= \a val.
-        If \a val is smaller than all numbers in \c r, returns -1. */
     tdiff iiv (const T &val) const
       { return tdiff(std::upper_bound(r.begin(),r.end(),val)-r.begin())-1; }
 
@@ -60,8 +58,8 @@ template<typename T> class rangeset
       // first to delete is at pos1+1; last is at pos2
       bool insert_a = (pos1&1)==v;
       bool insert_b = (pos2&1)==v;
-      tdiff rmstart=pos1+1+(insert_a ? 1 : 0);
-      tdiff rmend  =pos2-(insert_b ? 1 : 0);
+      int rmstart=pos1+1+(insert_a ? 1 : 0);
+      int rmend  =pos2-(insert_b?1:0);
 
       planck_assert((rmend-rmstart)&1,"cannot happen");
 
@@ -78,143 +76,27 @@ template<typename T> class rangeset
         }
       }
 
-    /*! Estimate a good strategy for set operations involving two rangesets. */
-    static int strategy (tsize sza, tsize szb)
+    static void generalUnion (const rtype &a, const rtype &b,
+      bool flip_a, bool flip_b, rtype &c)
       {
-      const double fct1 = 1.;
-      const double fct2 = 1.;
-      tsize slo = sza<szb ? sza : szb,
-            shi = sza<szb ? szb : sza;
-      double cost1 = fct1 * (sza+szb);
-      double cost2 = fct2 * slo * std::max(1,ilog2(shi));
-      return (cost1<=cost2) ? 1 : (slo==sza) ? 2 : 3;
-      }
-
-    void generalUnion1 (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
+      planck_assert((&c!=&a)&&(&c!=&b), "cannot overwrite the rangeset");
+      c.clear();
       bool state_a=flip_a, state_b=flip_b, state_res=state_a||state_b;
-      tsize ia=0, ea=a.r.size(), ib=0, eb=b.r.size();
+      tsize ia=0, ea=a.size(), ib=0, eb=b.size();
       bool runa = ia!=ea, runb = ib!=eb;
       while(runa||runb)
         {
-        T va = runa ? a.r[ia] : T(0),
-          vb = runb ? b.r[ib] : T(0);
-        bool adv_a = runa && (!runb || (va<=vb)),
-             adv_b = runb && (!runa || (vb<=va));
+        bool adv_a=false, adv_b=false;
+        T val,va=T(),vb=T();
+        if (runa) va = a[ia];
+        if (runb) vb = b[ib];
+        if (runa && (!runb || (va<=vb))) { adv_a=true; val=va; }
+        if (runb && (!runa || (vb<=va))) { adv_b=true; val=vb; }
         if (adv_a) { state_a=!state_a; ++ia; runa = ia!=ea; }
         if (adv_b) { state_b=!state_b; ++ib; runb = ib!=eb; }
         if ((state_a||state_b)!=state_res)
-          { r.push_back(adv_a ? va : vb); state_res = !state_res; }
+          { c.push_back(val); state_res = !state_res; }
         }
-      }
-    void generalUnion2 (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
-      tdiff iva = flip_a ? 0 : -1;
-      tdiff asz=tdiff(a.r.size()), bsz=tdiff(b.r.size());
-      while (iva<asz)
-        {
-        tdiff ivb = (iva==-1) ? -1 : b.iiv(a.r[iva]);
-        bool state_b = flip_b^((ivb&1)==0);
-        if ((iva>-1) && (!state_b)) r.push_back(a.r[iva]);
-        while((ivb<bsz-1)&&((iva==asz-1)||(b.r[ivb+1]<a.r[iva+1])))
-          { ++ivb; state_b=!state_b; r.push_back(b.r[ivb]); }
-        if ((iva<asz-1)&&(!state_b)) r.push_back(a.r[iva+1]);
-        iva+=2;
-        }
-      }
-    void generalUnion (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
-      planck_assert((this!=&a)&&(this!=&b), "cannot overwrite the rangeset");
-      if (a.r.empty())
-        {
-        if (flip_a) clear(); else *this=b;
-        return;
-        }
-      if (b.r.empty())
-        {
-        if (flip_b) clear(); else *this=a;
-        return;
-        }
-
-      clear();
-      int strat = strategy (a.nranges(), b.nranges());
-      (strat==1) ? generalUnion1(a,b,flip_a,flip_b) :
-        ((strat==2) ? generalUnion2(a,b,flip_a,flip_b)
-                    : generalUnion2(b,a,flip_b,flip_a));
-      }
-    void generalXor (const rangeset &a, const rangeset &b)
-      {
-      clear();
-      bool state_a=false, state_b=false, state_res=state_a||state_b;
-      tsize ia=0, ea=a.r.size(), ib=0, eb=b.r.size();
-      bool runa = ia!=ea, runb = ib!=eb;
-      while(runa||runb)
-        {
-        T va = runa ? a.r[ia] : T(0),
-          vb = runb ? b.r[ib] : T(0);
-        bool adv_a = runa && (!runb || (va<=vb)),
-             adv_b = runb && (!runa || (vb<=va));
-        if (adv_a) { state_a=!state_a; ++ia; runa = ia!=ea; }
-        if (adv_b) { state_b=!state_b; ++ib; runb = ib!=eb; }
-        if ((state_a^state_b)!=state_res)
-          { r.push_back(adv_a ? va : vb); state_res = !state_res; }
-        }
-      }
-
-    static bool generalAllOrNothing1 (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
-      bool state_a=flip_a, state_b=flip_b, state_res=state_a||state_b;
-      tsize ia=0, ea=a.r.size(), ib=0, eb=b.r.size();
-      bool runa = ia!=ea, runb = ib!=eb;
-      while(runa||runb)
-        {
-        T va = runa ? a.r[ia] : T(0),
-          vb = runb ? b.r[ib] : T(0);
-        bool adv_a = runa && (!runb || (va<=vb)),
-             adv_b = runb && (!runa || (vb<=va));
-        if (adv_a) { state_a=!state_a; ++ia; runa = ia!=ea; }
-        if (adv_b) { state_b=!state_b; ++ib; runb = ib!=eb; }
-        if ((state_a||state_b)!=state_res)
-          return false;
-        }
-      return true;
-      }
-    static bool generalAllOrNothing2 (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
-      tdiff iva = flip_a ? 0 : -1;
-      tdiff asz=tdiff(a.r.size()), bsz=tdiff(b.r.size());
-      while (iva<asz)
-        {
-        if (iva==-1) // implies that flip_a==false
-          { if ((!flip_b)||(b.r[0]<a.r[0])) return false; }
-        else if (iva==asz-1) // implies that flip_a==false
-          { if ((!flip_b)||(b.r[bsz-1]>a.r[asz-1])) return false; }
-        else
-          {
-          tdiff ivb=b.iiv(a.r[iva]);
-          if ((ivb!=bsz-1)&&(b.r[ivb+1]<a.r[iva+1])) return false;
-          if (flip_b==((ivb&1)==0)) return false;
-          }
-        iva+=2;
-        }
-      return true;
-      }
-    static bool generalAllOrNothing (const rangeset &a, const rangeset &b,
-      bool flip_a, bool flip_b)
-      {
-      if (a.r.empty())
-        return flip_a ? true : b.r.empty();
-      if (b.r.empty())
-        return flip_b ? true : a.r.empty();
-      int strat = strategy (a.nranges(), b.nranges());
-      return (strat==1) ? generalAllOrNothing1(a,b,flip_a,flip_b) :
-               ((strat==2) ? generalAllOrNothing2(a,b,flip_a,flip_b)
-                           : generalAllOrNothing2(b,a,flip_b,flip_a));
       }
 
   public:
@@ -223,22 +105,9 @@ template<typename T> class rangeset
     /*! Reserves space for \a n ranges. */
     void reserve(tsize n) { r.reserve(2*n); }
     /*! Returns the current number of ranges. */
-    tsize nranges() const { return r.size()>>1; }
-    tsize size() const { return nranges(); }
-    bool empty() const { return r.empty(); }
+    tsize size() const { return r.size()>>1; }
     /*! Returns the current vector of ranges. */
     const rtype &data() const { return r; }
-    void checkConsistency() const
-      {
-      planck_assert((r.size()&1)==0,"invalid number of entries");
-      for (tsize i=1; i<r.size(); ++i)
-        planck_assert(r[i]>r[i-1],"inconsistent entries");
-      }
-    void setData (const rtype &inp)
-      {
-      r=inp;
-      checkConsistency();
-      }
 
     /*! Returns the first value of range \a i. */
     const T &ivbegin (tdiff i) const { return r[2*i]; }
@@ -269,49 +138,36 @@ template<typename T> class rangeset
         than the minimum of the last range in the rangeset. */
     void append (const rangeset &other)
       {
-      for (tsize j=0; j<other.nranges(); ++j)
+      for (tsize j=0; j<other.size(); ++j)
         append(other.ivbegin(j),other.ivend(j));
       }
 
     /*! After this operation, the rangeset contains the union of itself
         with \a [v1;v2[. */
-    void add(const T &v1, const T &v2)
-      {
-      if (v2<=v1) return;
-      if (r.empty() || (v1>=r[r.size()-2])) append(v1,v2);
-      addRemove(v1,v2,1);
-      }
+    void add(const T &v1, const T &v2) { addRemove(v1,v2,1); }
     /*! After this operation, the rangeset contains the union of itself
         with \a [v;v+1[. */
-    void add(const T &v) { add(v,v+1); }
+    void add(const T &v) { addRemove(v,v+1,1); }
 
     /*! Removes all values within \a [v1;v2[ from the rangeset. */
-    void remove(const T &v1, const T &v2)
-      {
-      if (v2<=v1) return;
-      if (r.empty()) return;
-      if ((v2<=r[0])||(v1>=r.back())) return;
-      if ((v1<=r[0]) && (v2>=r.back())) { r.clear(); return; }
-      addRemove(v1,v2,0);
-      }
+    void remove(const T &v1, const T &v2) { addRemove(v1,v2,0); }
     /*! Removes the value \a v from the rangeset. */
-    void remove(const T &v) { remove(v,v+1); }
+    void remove(const T &v) { addRemove(v,v+1,0); }
 
-    /*! Removes all values not within \a [a;b[ from the rangeset. */
+    /*! Removes all values not within \a [v1;v2[ from the rangeset. */
     void intersect (const T &a, const T &b)
       {
-      if (r.empty()) return; // nothing to remove
-      if ((b<=r[0]) || (a>=r.back())) { r.clear(); return; } // no overlap
-      if ((a<=r[0]) && (b>=r.back())) return; // full rangeset in interval
-
-      tdiff pos2=iiv(b);
+      tdiff pos1=iiv(a), pos2=iiv(b);
       if ((pos2>=0) && (r[pos2]==b)) --pos2;
+      // delete all up to pos1 (inclusive); and starting from pos2+1
+      bool insert_a = (pos1&1)==0;
       bool insert_b = (pos2&1)==0;
+
+      // cut off end
       r.erase(r.begin()+pos2+1,r.end());
       if (insert_b) r.push_back(b);
 
-      tdiff pos1=iiv(a);
-      bool insert_a = (pos1&1)==0;
+      // erase start
       if (insert_a) r[pos1--]=a;
       if (pos1>=0)
         r.erase(r.begin(),r.begin()+pos1+1);
@@ -326,7 +182,7 @@ template<typename T> class rangeset
       return result;
       }
 
-    /*! After this operation, \a res contains all elements of the rangeset
+    /*! After this opration, \a res contains all elements of the rangeset
         in ascending order. */
     void toVector (std::vector<T> &res) const
       {
@@ -337,39 +193,42 @@ template<typename T> class rangeset
           res.push_back(m);
       }
 
-    /*! Returns a vector containing all elements of the rangeset in ascending
-        order. */
-    std::vector<T> toVector() const
+    /*! After this operation, the rangeset contains the union of itself
+        and \a other. */
+    void unite (const rangeset &other)
       {
-      std::vector<T> res;
-      toVector(res);
-      return res;
+      rtype tmp;
+      generalUnion (r,other.r,false,false,tmp);
+      std::swap(r,tmp);
       }
-
-    rangeset op_or (const rangeset &other) const
+    /*! After this operation, the rangeset contains the intersection of itself
+        and \a other. */
+    void intersect (const rangeset &other)
       {
-      rangeset res;
-      res.generalUnion (*this,other,false,false);
-      return res;
+      rtype tmp;
+      generalUnion (r,other.r,true,true,tmp);
+      std::swap(r,tmp);
       }
-    rangeset op_and (const rangeset &other) const
+    /*! After this operation, the rangeset contains the union of itself
+        with the inverse of \a other. */
+    void subtract (const rangeset &other)
       {
-      rangeset res;
-      res.generalUnion (*this,other,true,true);
-      return res;
+      rtype tmp;
+      generalUnion (r,other.r,true,false,tmp);
+      std::swap(r,tmp);
       }
-    rangeset op_andnot (const rangeset &other) const
-      {
-      rangeset res;
-      res.generalUnion (*this,other,true,false);
-      return res;
-      }
-    rangeset op_xor (const rangeset &other) const
-      {
-      rangeset res;
-      res.generalXor (*this,other);
-      return res;
-      }
+    /*! After this operation, the rangeset contains the union of \a a
+        and \a b. */
+    void setToUnion (const rangeset &a, const rangeset &b)
+      { generalUnion (a.r,b.r,false,false,r); }
+    /*! After this operation, the rangeset contains the intersection of \a a
+        and \a b. */
+    void setToIntersection (const rangeset &a, const rangeset &b)
+      { generalUnion (a.r,b.r,true,true,r); }
+    /*! After this operation, the rangeset contains the union of \a a
+        with the inverse of \a b. */
+    void setToDifference (const rangeset &a, const rangeset &b)
+      { generalUnion (a.r,b.r,true,false,r); }
 
     /*! Returns the index of the interval containing \a v; if no such interval
         exists, -1 is returned. */
@@ -381,12 +240,12 @@ template<typename T> class rangeset
 
     /*! Returns \a true if the rangeset is identical to \a other, else \a false.
         */
-    bool operator== (const rangeset &other) const
-      { return r==other.r; }
+    bool equals (const rangeset &other) const
+      { return r==other.data(); }
 
     /*! Returns \a true if the rangeset contains all values in the range
         \a [a;b[, else \a false. */
-    bool contains (T a,T b) const
+    bool containsAll (T a,T b) const
       {
       tdiff res=iiv(a);
       if (res&1) return false;
@@ -399,27 +258,24 @@ template<typename T> class rangeset
     /*! Returns \a true if the rangeset contains all values stored in \a other,
         else \a false. */
     bool contains (const rangeset &other) const
-      { return generalAllOrNothing(*this,other,false,true); }
-    /** Returns true if any of the numbers [a;b[ are contained in the set,
-        else false. */
-    bool overlaps (T a,T b) const
       {
-      tdiff res=iiv(a);
-      if ((res&1)==0) return true;
-      if (res==tdiff(r.size())-1) return false; // beyond the end of the set
-      return (r[res+1]<b);
+      tsize im=0, em=r.size();
+      for (tsize i=0; i<other.r.size(); i+=2)
+        {
+        T a=other.r[i], b=other.r[i+1];
+        while ((im!=em) && (r[im+1] < a)) im+=2;
+        if (im==em) return false;
+        if ((r[im]>a) || (r[im+1]<b)) return false;
+        }
+      return true;
       }
-    /** Returns true if there is overlap between the set and "other",
-        else false. */
-    bool overlaps (const rangeset &other) const
-      { return !generalAllOrNothing(*this,other,true,true); }
   };
 
 template<typename T> inline std::ostream &operator<< (std::ostream &os,
   const rangeset<T> &rs)
   {
   os << "{ ";
-  for (tsize i=0; i<rs.nranges(); ++i)
+  for (tsize i=0; i<rs.size(); ++i)
     os << "["<<rs.ivbegin(i)<<";"<<rs.ivend(i)<<"[ ";
   return os << "}";
   }

@@ -15,7 +15,7 @@
  *  along with Healpix_cxx; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 
 /*
@@ -25,7 +25,7 @@
  */
 
 /*
- *  Copyright (C) 2004-2014 Max-Planck-Society
+ *  Copyright (C) 2004-2012 Max-Planck-Society
  *  Author: Martin Reinecke
  */
 
@@ -59,9 +59,6 @@ Candidates for testing the validity of the Healpix routines:
 #include "geom_utils.h"
 #include "walltimer.h"
 #include "announce.h"
-#include "compress_utils.h"
-#include "moc.h"
-#include "moc_fitsio.h"
 
 using namespace std;
 
@@ -84,362 +81,6 @@ void random_zphi (double &z, double &phi)
 
 template<typename I> string bname()
   { return string("(basetype: ")+type2typename<I>()+")"; }
-
-
-template<typename I> rangeset<I> randomRangeSet(int num, I start, int dist)
-  {
-  rangeset<I> rs;
-  I curval=start;
-  for (int i=0; i<num; ++i)
-    {
-    I v1=curval+1+(rng.int_rand_uni()%dist);
-    I v2=v1+1+(rng.int_rand_uni()%dist);
-    rs.append(v1,v2);
-    curval=v2;
-    }
-  return rs;
-  }
-template<typename I> Moc<I> randomMoc(int num, I start, int dist)
-  {
-  Moc<I> moc;
-  I curval=start+(I(1)<<(2*Moc<I>::maxorder));
-  for (int i=0; i<num; ++i)
-    {
-    I v1=curval+1+(rng.int_rand_uni()%dist);
-    I v2=v1+1+(rng.int_rand_uni()%dist);
-    moc.addPixelRange(Moc<I>::maxorder,v1,v2);
-    curval=v2;
-    }
-  return moc;
-  }
-
-template<typename I> rangeset<I> makeRS(const string &input)
-  {
-  istringstream is(input);
-  rangeset<I> res;
-  I a,b;
-  while (is)
-    {
-    is>>a>>b;
-    planck_assert (is||is.eof(),"aargh");
-    if (is) res.append(a,b);
-    }
-  return res;
-  }
-template<typename I> void rsOps(const rangeset<I> &a, const rangeset<I> &b)
-  {
-  planck_assert(!b.overlaps(a.op_andnot(b)),"error");
-  planck_assert(a.op_or(b).nval()>=a.nval(),"error");
-  planck_assert(a.op_or(b).nval()>=b.nval(),"error");
-  planck_assert(a.op_and(b).nval()<=a.nval(),"error");
-  planck_assert(a.op_and(b).nval()<=b.nval(),"error");
-  planck_assert(a.op_or(b).contains(a),"error");
-  planck_assert(a.op_or(b).contains(b),"error");
-  planck_assert(!a.op_andnot(b).overlaps(b),"error");
-  planck_assert(!b.op_andnot(a).overlaps(a),"error");
-  planck_assert(a.op_or(b).nval()==a.nval()+b.nval()-a.op_and(b).nval(),
-    "error");
-  planck_assert(a.op_or(b).op_andnot(a.op_and(b)).nval()==
-                a.op_or(b).nval()-a.op_and(b).nval(),"error");
-  planck_assert(a.op_xor(b)==a.op_andnot(b).op_or(b.op_andnot(a)),"error");
-  }
-template<typename I> void check_rangeset()
-  {
-  cout << "testing rangeset " << bname<I>() << endl;
-  {
-  rangeset<I> b;
-  b.append(1,11);
-  planck_assert(b==makeRS<I>("1 11"),"mismatch");
-  b.append(10,15);
-  planck_assert(b==makeRS<I>("1 15"),"mismatch");
-  b.append(1,15);
-  planck_assert(b==makeRS<I>("1 15"),"mismatch");
-  b.append(7,15);
-  planck_assert(b==makeRS<I>("1 15"),"mismatch");
-  b.append(30,41);
-#if 0
-  planck_assert(b==makeRS<I>("1 15 30 41"),"mismatch");
-  try
-    {
-    b.append(29,31);
-    planck_fail("Should have raised an IllegalArgumentException");
-    }
-  catch (PlanckError E) {}
-#endif
-  }
-  {
-  rangeset<I> b=makeRS<I>("1 11 30 41");
-  planck_assert(!b.contains(0),"error");
-  planck_assert(b.contains(1),"error");
-  planck_assert(b.contains(5),"error");
-  planck_assert(b.contains(10),"error");
-  planck_assert(!b.contains(11),"error");
-  planck_assert(!b.contains(29),"error");
-  planck_assert(b.contains(30),"error");
-  planck_assert(b.contains(35),"error");
-  planck_assert(b.contains(40),"error");
-  planck_assert(!b.contains(41),"errror");
-  }
-  {
-  rangeset<I> b;
-  b.add(5, 11);
-  planck_assert(b==makeRS<I>("5 11"),"error");
-  b.add(1, 7);
-  planck_assert(b==makeRS<I>("1 11"),"error");
-  b.add(1, 11);
-  planck_assert(b==makeRS<I>("1 11"),"error");
-  b.add(30, 41);
-  planck_assert(b==makeRS<I>("1 11 30 41"),"error");
-  b.add(1, 11);
-  planck_assert(b==makeRS<I>("1 11 30 41"),"error");
-  b.add(-1,0);
-  planck_assert(b==makeRS<I>("-1 0 1 11 30 41"),"error");
-  b.add(-2,-1);
-  planck_assert(b==makeRS<I>("-2 0 1 11 30 41"),"error");
-  b.add(-2,-1);
-  planck_assert(b==makeRS<I>("-2 0 1 11 30 41"),"error");
-  b.add(2, 11);
-  planck_assert(b==makeRS<I>("-2 0 1 11 30 41"),"error");
-  b.add(1, 10);
-  planck_assert(b==makeRS<I>("-2 0 1 11 30 41"),"error");
-  b.add(15, 21);
-  planck_assert(b==makeRS<I>("-2 0 1 11 15 21 30 41"),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("0 11 20 31");
-  b.remove(5,25);
-  planck_assert(b==makeRS<I>("0 5 25 31"),"error");
-  b.remove(31,32);
-  planck_assert(b==makeRS<I>("0 5 25 31"),"error");
-  b.remove(35,38);
-  planck_assert(b==makeRS<I>("0 5 25 31"),"error");
-  b.remove(-90,-80);
-  planck_assert(b==makeRS<I>("0 5 25 31"),"error");
-  b.remove(27,29);
-  planck_assert(b==makeRS<I>("0 5 25 27 29 31"),"error");
-  b.remove(25,26);
-  planck_assert(b==makeRS<I>("0 5 26 27 29 31"),"error");
-  b.remove(4,6);
-  planck_assert(b==makeRS<I>("0 4 26 27 29 31"),"error");
-  b.remove(-20,40);
-  planck_assert(b==makeRS<I>(""),"error");
-  b.remove(-20,40);
-  planck_assert(b==makeRS<I>(""),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("0 11 20 31");
-  b.intersect(2,29);
-  planck_assert(b==makeRS<I>("2 11 20 29"),"error");
-  b.intersect(-8,50);
-  planck_assert(b==makeRS<I>("2 11 20 29"),"error");
-  b.intersect(2,50);
-  planck_assert(b==makeRS<I>("2 11 20 29"),"error");
-  b.intersect(2,29);
-  planck_assert(b==makeRS<I>("2 11 20 29"),"error");
-  b.intersect(-18,29);
-  planck_assert(b==makeRS<I>("2 11 20 29"),"error");
-  b.intersect(3,11);
-  planck_assert(b==makeRS<I>("3 11"),"error");
-  b = makeRS<I>("0 11 20 31");
-  b.intersect(3,15);
-  planck_assert(b==makeRS<I>("3 11"),"error");
-  b = makeRS<I>("0 11 20 31");
-  b.intersect(17,30);
-  planck_assert(b==makeRS<I>("20 30"),"error");
-  b = makeRS<I>("0 11 20 31");
-  b.intersect(11,20);
-  planck_assert(b==makeRS<I>(""),"error");
-  b = makeRS<I>("0 11 20 31");
-  b.intersect(-8,-7);
-  planck_assert(b==makeRS<I>(""),"error");
-  b = makeRS<I>("0 11 20 31");
-  b.intersect(31,35);
-  planck_assert(b==makeRS<I>(""),"error");
-  }
-  {
-  planck_assert(makeRS<I>("1 11 20 31 40 56")==
-                makeRS<I>("20 31 40 51").op_or
-                (makeRS<I>("1 11 45 56")),"error");
-  planck_assert(makeRS<I>("1 11 45 56")==
-                makeRS<I>("").op_or
-                (makeRS<I>("1 11 45 56")),"error");
-  planck_assert(makeRS<I>("1 11 45 56")==
-                makeRS<I>("1 11 45 56").op_or
-                (makeRS<I>("")),"error");
-  }
-  {
-  planck_assert(makeRS<I>("22 24 45 51")==
-                makeRS<I>("20 31 40 51").op_and
-                (makeRS<I>("1 11 22 24 45 56")),"error");
-  planck_assert(makeRS<I>("20 31 40 51 90 101 110 121 200 201")==
-                makeRS<I>("10 101 110 121 200 221").op_and
-                (makeRS<I>("20 31 40 51 90 201")),"error");
-  planck_assert(makeRS<I>("")==
-                makeRS<I>("20 31 40 51").op_and
-                (makeRS<I>("")),"error");
-  planck_assert(makeRS<I>("")==
-                makeRS<I>("").op_and
-                (makeRS<I>("20 31 40 51")),"error");
-  }
-  {
-  planck_assert(makeRS<I>("20 31 40 45")==
-                makeRS<I>("20 31 40 51").op_andnot
-                (makeRS<I>("1 11 45 56")),"error");
-  planck_assert(makeRS<I>("")==
-                makeRS<I>("").op_andnot
-                (makeRS<I>("1 11 45 56")),"error");
-  planck_assert(makeRS<I>("1 11 45 56")==
-                makeRS<I>("1 11 45 56").op_andnot
-                (makeRS<I>("")),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("20 31 40 51");
-
-  planck_assert(!b.contains(0,11),"error");
-  planck_assert(!b.contains(10,21),"error");
-  planck_assert(!b.contains(19,20),"error");
-  planck_assert(b.contains(20,21),"error");
-  planck_assert(b.contains(21,22),"error");
-  planck_assert(b.contains(20,31),"error");
-  planck_assert(!b.contains(25,36),"error");
-  planck_assert(b.contains(30,31),"error");
-  planck_assert(!b.contains(31,32),"error");
-  planck_assert(!b.contains(35,38),"error");
-  planck_assert(!b.contains(35,46),"error");
-  planck_assert(b.contains(40,41),"error");
-  planck_assert(!b.contains(45,56),"error");
-  planck_assert(!b.contains(60,71),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("20 31 40 51");
-
-  planck_assert(b.contains(makeRS<I>("20 31 40 51")),"error");
-  planck_assert(b.contains(makeRS<I>("20 21")),"error");
-  planck_assert(b.contains(makeRS<I>("50 51")),"error");
-  planck_assert(!b.contains(makeRS<I>("19 31 40 51")),"error");
-  planck_assert(!b.contains(makeRS<I>("20 31 40 52")),"error");
-  planck_assert(!b.contains(makeRS<I>("20 51")),"error");
-  planck_assert(!b.contains(makeRS<I>("0 1")),"error");
-  planck_assert(!b.contains(makeRS<I>("0 20 31 40 51 100")),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("20 31 40 51");
-
-  planck_assert(!b.overlaps(0,11),"error");
-  planck_assert(b.overlaps(10,21),"error");
-  planck_assert(!b.overlaps(19,20),"error");
-  planck_assert(b.overlaps(20,21),"error");
-  planck_assert(b.overlaps(21,22),"error");
-  planck_assert(b.overlaps(20,31),"error");
-  planck_assert(b.overlaps(25,36),"error");
-  planck_assert(b.overlaps(30,37),"error");
-  planck_assert(!b.overlaps(31,32),"error");
-  planck_assert(!b.overlaps(35,38),"error");
-  planck_assert(b.overlaps(35,46),"error");
-  planck_assert(b.overlaps(40,41),"error");
-  planck_assert(b.overlaps(45,56),"error");
-  planck_assert(!b.overlaps(60,71),"error");
-  }
-  {
-  rangeset<I> b = makeRS<I>("20 31 40 51");
-
-  planck_assert(b.overlaps(makeRS<I>("20 31 40 51")),"error");
-  planck_assert(b.overlaps(makeRS<I>("20 21")),"error");
-  planck_assert(b.overlaps(makeRS<I>("50 51")),"error");
-  planck_assert(b.overlaps(makeRS<I>("19 31 40 51")),"error");
-  planck_assert(b.overlaps(makeRS<I>("20 31 40 52")),"error");
-  planck_assert(b.overlaps(makeRS<I>("20 51")),"error");
-  planck_assert(!b.overlaps(makeRS<I>("0 1")),"error");
-  planck_assert(!b.overlaps(makeRS<I>("0 20 31 40 51 100")),"error");
-  }
-  {
-  const int niter = 100;
-  for (int iter=0; iter<niter; ++iter)
-    {
-    rangeset<I> a = randomRangeSet<I>(1000, 0, 100);
-    rangeset<I> b = randomRangeSet<I>(1000, 0, 100);
-    rangeset<I> c = randomRangeSet<I>(10, 10000, 100);
-    rsOps(a,b);
-    rsOps(a,c);
-    rsOps(c,a);
-    }
-  }
-  }
-template<typename I> void check_Moc()
-  {
-  cout << "testing MOC " << bname<I>() << endl;
-  Moc<I> moc;
-  moc.addPixelRange(0,4,5);
-  moc.addPixelRange(0,6,7);
-  moc.addPixelRange(2,4,17);
-  moc.addPixelRange(10,3000000,3000001);
-
-  planck_assert(moc==moc.complement().complement(),"error");
-  planck_assert(moc==Moc<I>::fromUniq(moc.toUniq()),"error");
-  planck_assert(moc.maxOrder()==10,"error");
-  Moc<I> xtmp = moc.degradedToOrder(8,false);
-  planck_assert(moc.contains(xtmp),"error");
-  planck_assert(!xtmp.contains(moc),"error");
-  planck_assert(xtmp.overlaps(moc),"error");
-  xtmp=moc.degradedToOrder(8,true);
-  planck_assert(!moc.contains(xtmp),"error");
-  planck_assert(xtmp.contains(moc),"error");
-  planck_assert(xtmp.overlaps(moc),"error");
-  planck_assert(moc==Moc<I>::fromCompressed(moc.toCompressed()),"error");
-#if 0
-  assertEquals("inconsistency",moc,MocUtil.mocFromString(" 0/4, 6 2/ \t 4 -16 10/3000000 \t\n "));
-  assertEquals("inconsistency",moc,MocUtil.mocFromString("0/6 2/ 5 2/4 2/6- 16 0/4  10/3000000"));
-  assertEquals("inconsistency",moc,MocUtil.mocFromString
-    ("{\"0\":[6] , \"2\": [5 ], \"2\":[  4,6,7,8,9,10,11,12,13,14,15,16], \"0\":[4],  \"10\":[3000000]}"));
-  assertEquals("inconsistency",moc,MocUtil.mocFromString(MocUtil.mocToStringASCII(moc)));
-  assertEquals("inconsistency",moc,MocUtil.mocFromString(MocUtil.mocToStringJSON(moc)));
-  ByteArrayOutputStream out= new ByteArrayOutputStream();
-  MocUtil.mocToFits(moc,out);
-  ByteArrayInputStream inp = new ByteArrayInputStream(out.toByteArray());
-  assertEquals("inconsistency",moc,MocUtil.mocFromFits(inp));
-#endif
-  {
-  tsize niter = 100;
-  Moc<I> full; full.addPixelRange(0,0,12);
-  Moc<I> empty;
-  for (tsize iter=0; iter<niter; ++iter)
-    {
-    Moc<I> a = randomMoc<I>(1000, 0, 100);
-    planck_assert(a.complement().complement()==a,"error");
-    planck_assert(!a.overlaps(a.complement()),"error");
-    planck_assert(a.op_or(a.complement())==full,"error");
-    planck_assert(a.op_and(a.complement())==empty,"error");
-#if 0
-    write_Moc_to_fits("!healpixtestmoctmp",a);
-    Moc<I> b;
-    read_Moc_from_fits("healpixtestmoctmp",b);
-    planck_assert(a==b,"FITS problem");
-#endif
-    }
-  }
-  }
-template<typename I> void check_compress()
-  {
-  cout << "testing interpolation coding " << bname<I>() << endl;
-  planck_assert(trailingZeros(4)==2,"error");
-  planck_assert(trailingZeros(5)==0,"error");
-  planck_assert(trailingZeros(int64(1)<<48)==48,"error");
-  for (tsize x=0; x<100; ++x)
-    {
-    rangeset<I> a = randomRangeSet<I>(1000, 0, 100);
-    rangeset<I> b;
-    for (tsize i=0; i<a.nranges(); ++i)
-      b.append(a.ivbegin(i)<<6,a.ivend(i)<<6);
-    const vector<I> &v=b.data();
-    obitstream obs;
-    interpol_encode(v.begin(),v.end(),obs);
-    vector<uint8> comp=obs.state();
-    vector<I> v2;
-    ibitstream ibs(comp);
-    interpol_decode(v2,ibs);
-    planck_assert(v==v2,"data mismatch");
-    }
-  }
 
 template<typename I> void check_ringnestring()
   {
@@ -661,7 +302,7 @@ void check_query_disc_strict (Healpix_Ordering_Scheme scheme)
       map.query_disc(ptg,rad,pixset);
       vec3 vptg=ptg;
       double cosrad=cos(rad);
-      for (tsize j=0; j<pixset.nranges(); ++j)
+      for (tsize j=0; j<pixset.size(); ++j)
         for (int i=pixset.ivbegin(j); i<pixset.ivend(j); ++i)
           map[i] = true;
       for (int i=0; i<map.Npix(); ++i)
@@ -670,7 +311,7 @@ void check_query_disc_strict (Healpix_Ordering_Scheme scheme)
         if (inside^map[i])
           cout << "  PROBLEM: order = " << order << ", ptg = " << ptg << endl;
         }
-      for (tsize j=0; j<pixset.nranges(); ++j)
+      for (tsize j=0; j<pixset.size(); ++j)
         for (int i=pixset.ivbegin(j); i<pixset.ivend(j); ++i)
           map[i] = false;
       }
@@ -680,7 +321,7 @@ void check_query_disc_strict (Healpix_Ordering_Scheme scheme)
 template<typename I>void check_query_disc()
   {
   cout << "checking query_disc() " << bname<I>() << endl;
-  int omax=min<int>(20,T_Healpix_Base<I>::order_max);
+  int omax=min(20,T_Healpix_Base<I>::order_max);
   for (int order=0; order<=omax; ++order)
     {
     T_Healpix_Base<I> rbase (order,RING), nbase (order,NEST);
@@ -698,7 +339,7 @@ template<typename I>void check_query_disc()
         rangeset<I> psi;
         rbase.query_disc_inclusive(ptg,rad,psi,fct);
         if (!psi.contains(pslast))
-          cout << "  PROBLEM: RING pixel sets inconsistent" << endl;
+          cout << "  PROBLEM: pixel sets inconsistent" << endl;
         swap(pslast,psi);
         }
       I nval = pixset.nval();
@@ -709,7 +350,7 @@ template<typename I>void check_query_disc()
         rangeset<I> psi;
         nbase.query_disc_inclusive(ptg,rad,psi,fct);
         if (!psi.contains(pslast))
-          cout << "  PROBLEM: NEST pixel sets inconsistent" << endl;
+          cout << "  PROBLEM: pixel sets inconsistent" << endl;
         swap(pslast,psi);
         }
       if (nval!=pixset.nval())
@@ -721,7 +362,7 @@ template<typename I>void check_query_disc()
 template<typename I>void check_query_polygon()
   {
   cout << "checking query_polygon() " << bname<I>() << endl;
-  int omax=min<int>(20,T_Healpix_Base<I>::order_max);
+  int omax=min(20,T_Healpix_Base<I>::order_max);
   for (int order=0; order<=omax; ++order)
     {
     T_Healpix_Base<I> rbase (order,RING), nbase (order,NEST);
@@ -1164,7 +805,7 @@ template<typename I>void perf_query_disc(const string &name,
     {
     rangeset<I> pix;
     base.query_disc(vec3(1,0,0),halfpi/9,pix);
-    dummy+=pix.nranges();
+    dummy+=pix.size();
     ++cnt;
     }
   wallTimers.stop(name);
@@ -1184,7 +825,7 @@ template<typename I>void perf_query_triangle(const string &name,
     {
     rangeset<I> pix;
     base.query_polygon(corner,pix);
-    dummy+=pix.nranges();
+    dummy+=pix.size();
     ++cnt;
     }
   wallTimers.stop(name);
@@ -1205,7 +846,7 @@ template<typename I>void perf_query_polygon(const string &name,
     {
     rangeset<I> pix;
     base.query_polygon(corner,pix);
-    dummy+=pix.nranges();
+    dummy+=pix.size();
     ++cnt;
     }
   wallTimers.stop(name);
@@ -1269,14 +910,6 @@ int main(int argc, const char **argv)
   {
   module_startup ("hpxtest",argc,argv,1,"");
   perftest();
-  check_compress<int>();
-  check_compress<unsigned>();
-  check_compress<int64>();
-  check_compress<uint64>();
-  check_Moc<int>();
-  check_Moc<int64>();
-  check_rangeset<int>();
-  check_rangeset<int64>();
   check_isqrt();
   check_pix2ang_acc();
   check_smooth_alm();

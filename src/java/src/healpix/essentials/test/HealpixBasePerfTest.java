@@ -15,7 +15,7 @@
  *  along with this code; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 package healpix.essentials.test;
 
@@ -222,7 +222,7 @@ public class HealpixBasePerfTest extends TestCase
     for (int m=0; m<1000; ++m)
       {
       RangeSet lrs=base.queryDisc(new Pointing(new Vec3(1,0,0)),Constants.halfpi/9.);
-      dummy+=lrs.nranges();
+      dummy+=lrs.size();
       ++cnt;
       }
     double time = 1e-9*(System.nanoTime()-tstart);
@@ -245,7 +245,7 @@ public class HealpixBasePerfTest extends TestCase
     for (int m=0; m<1000; ++m)
       {
       RangeSet lrs=base.queryPolygon(corner);
-      dummy+=lrs.nranges();
+      dummy+=lrs.size();
       ++cnt;
       }
     double time = 1e-9*(System.nanoTime()-tstart);

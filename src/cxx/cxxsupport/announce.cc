@@ -77,7 +77,7 @@ void vec_status()
 void announce (const string &name)
   {
 #ifndef VERSION
-#define VERSION "?.?"
+#define VERSION "3.20"
 #endif
   string version = "v" VERSION;
   string name2 = name+" "+version;

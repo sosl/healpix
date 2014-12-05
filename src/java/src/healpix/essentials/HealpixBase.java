@@ -15,7 +15,7 @@
  *  along with this code; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- *  For more information about HEALPix, see http://healpix.sourceforge.net
+ *  For more information about HEALPix, see http://healpix.jpl.nasa.gov
  */
 
 package healpix.essentials;
@@ -683,7 +683,7 @@ public class HealpixBase extends HealpixTables
   private RangeSet queryStripInternal(double theta1, double theta2,
     boolean inclusive) throws Exception
     {
-    RangeSet pixset = new RangeSet(1);
+    RangeSet pixset = new RangeSet(2);
     if (scheme==Scheme.RING)
       {
       long ring1 = Math.max(1,1+ringAbove(FastMath.cos(theta1))),
@@ -1039,7 +1039,7 @@ public class HealpixBase extends HealpixTables
         RangeSet rstmp = new RangeSet();
         rstmp.append(ipix1,ipix2+1);
 
-        for (int j=0; (j<nd)&&(rstmp.nranges()>0); ++j)
+        for (int j=0; (j<nd)&&(rstmp.size()>0); ++j)
           {
           double x = (cosrbig[j]-z*z0[j])*xa[j];
           double ysq = 1.-z*z-x*x;
