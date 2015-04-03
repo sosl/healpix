@@ -156,7 +156,6 @@ clean :
 # Tidy: remove library and include files
 tidy : clean
 	$(RM) $(LIBDIR)/libchealpix.* $(INCDIR)/chealpix.h
-	$(RM) $(LIBDIR)/chealpix.pc
 
 # Distclean: remove directories
 distclean: tidy

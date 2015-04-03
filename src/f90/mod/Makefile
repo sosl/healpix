@@ -37,20 +37,13 @@ SD :=$(shell pwd)
 OBJ:=$(obj:%=$(OD)/%)
 LIB:=$(LIBDIR)/libhealpix$(LIBSUFFIX)
 
-# add internal name of shared library
-ifneq ($(strip $(FLAGNAMELIB)),)
-NAMELIB = $(FLAGNAMELIB)$(notdir $(LIB))
-else
-NAMELIB = 
-endif
-
 # library creation
 .DEFAULT_GOAL := all
 
 all: $(OD)_mkdir $(LIB)
 
 $(LIB): $(OBJ) $(objsharp) $(incpix) $(incalm) $(incfits) $(incudgrade)
-	$(AR) $@ $(NAMELIB) $(OBJ) $(objsharp)
+	$(AR)  $(LIB) $(OBJ) $(objsharp)
 	@for p in $(OD)/*.$(MOD); do \
 	cp $$p $(INCDIR)/; \
 	done
@@ -60,13 +53,13 @@ $(LIB): $(OBJ) $(objsharp) $(incpix) $(incalm) $(incfits) $(incudgrade)
 	@if [ ! -d $* ]; then $(MKDIR) $* ; fi 
 
 # objects creation
-$(obj1:%=$(OD)/%): $(obj0:%=$(OD)/%)
-$(obj2:%=$(OD)/%): $(obj1:%=$(OD)/%)
-$(obj3:%=$(OD)/%): $(obj2:%=$(OD)/%)
-$(obj4:%=$(OD)/%): $(obj3:%=$(OD)/%)
-$(obj5:%=$(OD)/%): $(obj4:%=$(OD)/%)
-$(obj6:%=$(OD)/%): $(obj5:%=$(OD)/%)
-$(obj7:%=$(OD)/%): $(obj6:%=$(OD)/%)
+$(obj1): $(obj0)
+$(obj2): $(obj1)
+$(obj3): $(obj2)
+$(obj4): $(obj3)
+$(obj5): $(obj4)
+$(obj6): $(obj5)
+$(obj7): $(obj6)
 
 $(OD)/%.o: $(SD)/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -62,7 +62,6 @@ pro mollview, file_in, select_in, $
               OFFSET = offset, $
               ONLINE = online, $
               OUTLINE = outline, $
-              PDF = pdf, $
               PNG = png, $
               POLARIZATION = polarization, $
               PREVIEW = preview, $
@@ -177,8 +176,6 @@ pro mollview, file_in, select_in, $
 ;              -Indexes [0,40] are reserved for standard IDL color tables, while
 ;               [41,255] are used for user defined color tables read from disc (created and
 ;               written to disc with MODIFYCT), if any.
-;              -Indexes 1001 (or 'planck1', case insensitive) and 1002 (or 'planck2')
-;               are reserved for Planck color tables 1 and 2 (see Planck_colors routine)
 ;              -If the index does not match any existing table, or if it is
 ;              above 255, the current
 ;               table (modifiable with TVLCT, XLOADCT, XPALETTE, ... 
@@ -199,9 +196,9 @@ pro mollview, file_in, select_in, $
 ;               original system assumed to be Galactic unless indicated otherwise in the file)
 ;                  see also : Rot
 ;
-;       CROP : if set, the image produced (gif, jpeg, pdf, png, ps, X) only
-;               contains the projected map and not the title, color bar, ...
-;               (see also : GIF, JPEG, PDF, PNG, PS)
+;       CROP : if set the image file (gif, png) only contains the mollweide map and
+;               not the title, color bar, ...
+;               (see also : GIF, PNG)
 ;
 ;       EXECUTE: character string containing an IDL command to be executed in
 ;                the plotting window
@@ -241,7 +238,7 @@ pro mollview, file_in, select_in, $
 ;	      if set to 1            : output the plot in plot_XXX.gif
 ;                with XXX = azimequid, cartesian, gnomic, mollweide or orthographic
 ;	      if set to a file name  : output the plot in that file 
-;             (see also : CROP, JPEG, PNG, PDF, PS and PREVIEW)
+;             (see also : CROP, JPEG, PNG, PS and PREVIEW)
 ;
 ;       GLSIZE : character size of the graticule labels in units of CHARSIZE
 ;             default: 0 (ie, no labeling of graticules)
@@ -254,7 +251,6 @@ pro mollview, file_in, select_in, $
 ;         ** gnomview : default =  5, gmin =  0 **
 ;         ** mollview : default = 45, gmin = 10 **
 ;         ** orthview : default = 45, gmin = 10 **
-;         The graticule lines thickness is controlled with !P.THICK
 ;
 ;       HALF_SKY: if set, only shows only one half of the sky 
 ;          (centered on (0,0) or on the location parametrized by Rot) instead of the full sky
@@ -302,7 +298,7 @@ pro mollview, file_in, select_in, $
 ;	      if set to 1            : output the plot in plot_XXX.jpeg
 ;                with XXX = azimequid, cartesian, gnomic, mollweide or orthographic
 ;	      if set to a file name  : output the plot in that file 
-;             (see also : CROP, GIF, PDF, PNG, PS and PREVIEW)
+;             (see also : CROP, GIF, PNG, PS and PREVIEW)
 ;
 ; 	LOG: display the log of map (see also : HIST)
 ;         only applies to pixel with signal > 0.
@@ -368,7 +364,6 @@ pro mollview, file_in, select_in, $
 ;           - 'COORD' coordinate system (either, 'C', 'G', or 'E') of the contour
 ;           - 'RA'  or longitude coordinates (array)
 ;           - 'DEC' or lattitude coordinates (array of same size)
-;           and can optionally contain the fields
 ;           - 'LINE[STYLE]' : +2 : black dashes
 ;                           +1 : black dots
 ;                            0 : black solid [default]
@@ -382,24 +377,16 @@ pro mollview, file_in, select_in, $
 ;                        connected, by arcs of geodesics.
 ;                    if >0, only the vertices are shown
 ;                    (default = 0)
-;           - 'SYM[SIZE]' symbol size (same meaning as SYMSIZE in IDL), (default = 1)
-;          The line and symbol thickness are controlled (indirectly) via !P.THICK.
+;           - 'SYM[SIZE]' symbol size (same meaning as SYMSIZE in IDL)
 ;          Outline can be either a single structure, or an array of structures,
 ;          or a structure of structures
-;
-;	PDF : string containing the name of a PDF output
-;             if set to 0 or not set : output to screen
-;	      if set to 1            : output the plot in plot_XXX.pdf
-;                with XXX = azimequid, cartesian, gnomic, mollweide or orthographic
-;	      if set to a file name  : output the plot in that file 
-;               (see: CROP, GIF, JPEG, PNG, PREVIEW and PS)
 ;
 ;	PNG : string containing the name of a .PNG output
 ;	      if set to 0 or not set : no .PNG done
 ;	      if set to 1            : output the plot in plot_XXX.png
 ;                with XXX = azimequid, cartesian, gnomic, mollweide or orthographic
 ;	      if set to a file name  : output the plot in that file 
-;             (see also : CROP, GIF, JPEG, PDF, PNG, PS and PREVIEW)
+;             (see also : CROP, GIF, JPEG, PNG, PS and PREVIEW)
 ;
 ;       POLARIZATION: 
 ;         if set to 0, no polarization information is plotted.
@@ -422,12 +409,11 @@ pro mollview, file_in, select_in, $
 ;             (default=1), while the third one controls the distance between
 ;             vectors (default=1). Non positive values are replaced by 1.
 ;
-;	PREVIEW : if set, there is a preview of the GIF, JPG, PDF, PostScript,
-;	         PNG file being produced  
-;                    (see: CROP, GIF, JPEG, PDF, PNG and PS)
+;	PREVIEW : if set, there is a 'ghostview' preview of the postscript file (see : PS)
+;                    or a 'xv' preview of the gif or png file (see: CROP, GIF,
+;                    JPEG, PNG and PS)
 ;
-;	PS :  string containing the name of a PS output
-;             if set to 0 or not set : output to screen
+;	PS :  if set to 0 or not set : output to screen
 ;	      if set to 1            : output the plot in plot_XXX.ps
 ;                with XXX = azimequid, cartesian, gnomic, mollweide or orthographic
 ;	      if set to a file name  : output the plot in that file 
@@ -618,7 +604,7 @@ if (n_params() lt 1 or n_params() gt 2) then begin
     print,'              NESTED=, NOBAR=, NOLABELS=, '
     print,'              NO_DIPOLE, NO_MONOPLE, '
     print,'              OFFSET=, ONLINE=, OUTLINE=,'
-    print,'              PDF=, PNG=, POLARIZATION=, PREVIEW=, '
+    print,'              PNG=, POLARIZATION=, PREVIEW=, '
     print,'              PS=, PXSIZE=, PYSIZE=, QUADCUBE= ,'
     print,'              RETAIN=, ROT=,  '
     print,'              SAVE=, SILENT=, SUBTITLE=, '
@@ -676,7 +662,7 @@ proj2out, $
   POLARIZATION=polarization, OUTLINE=outline, /MOLL, FLIP=flip, COORD_IN=coord_in, IGRATICULE=igraticule, $
   HBOUND = hbound, WINDOW = window, EXECUTE=execute, SILENT=silent, GLSIZE=glsize, $
   IGLSIZE=iglsize, RETAIN=retain, TRUECOLORS=truecolors, TRANSPARENT=transparent, CHARTHICK=charthick, $
-  JPEG=jpeg, BAD_COLOR=bad_color, BG_COLOR=bg_color, FG_COLOR=fg_color, PDF=pdf
+  JPEG=jpeg, BAD_COLOR=bad_color, BG_COLOR=bg_color, FG_COLOR=fg_color
 
 
 w_num = !d.window

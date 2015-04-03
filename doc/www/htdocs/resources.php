@@ -5,11 +5,7 @@
 <br>
 <ul>
 <li>
-The <a href="http://www.cosmos.esa.int/web/planck">Planck</a> satellite full sky maps, 
-<a href="http://www.cosmos.esa.int/web/planck/publications">observed at 30 to 857 GHz with unprecedented accuracy</a>, 
-and their decomposition in cosmological and astrophysical components are available in HEALPix format from ESA 
-<a href="http://www.cosmos.esa.int/web/planck/pla">Planck Legacy Archive</a>, 
-and NASA <a href="http://irsa.ipac.caltech.edu/Missions/planck.html">Infrared Science Archive</a>
+The <a href="http://www.rssd.esa.int/index.php?project=Planck">Planck</a> satellite full sky maps, <a href="http://www.sciops.esa.int/index.php?project=PLANCK&page=Planck_Published_Papers">observed at 30 to 857 GHz with unprecedented accuracy</a>, and their decomposition in cosmological and astrophysical components are available in HEALPix format from ESA <a href="http://www.sciops.esa.int/index.php?project=planck&page=Planck_Legacy_Archive">Planck Legacy Archive</a>, and NASA <a href="http://irsa.ipac.caltech.edu/">Infrared Science Archive</a>
 </li>
 
 <li>
@@ -21,18 +17,11 @@ The
 
 <li>
 The <a href="http://lambda.gsfc.nasa.gov/product/cobe/" >COBE</a>
-data, including DMR and FIRAS
-</li>
+data, including DMR, DIRBE, and FIRAS
+    </li>
 
 <li>
-The Extended Sky Emission Repository of <a href="http://cade.irap.omp.eu/dokuwiki/doku.php?id=welcome">CADE</a>
-which includes <a href="http://cade.irap.omp.eu/dokuwiki/doku.php?id=cobe">COBE/DIRBE</a> and many other surveys
-</li>
-
-<li>
-The radio and infrared <a href="http://lambda.gsfc.nasa.gov/product/foreground/f_products.cfm">foregrounds</a> maps
-including CO, Dust, Synchrotron, H-alpha and HI, as well as
-<a href="http://lambda.gsfc.nasa.gov/product/iras/">IRAS</a> maps
+The Haslam and <a href="http://lambda.gsfc.nasa.gov/product/iras/" >IRAS</a> maps
 </li>
 <!--
 <li>
@@ -44,7 +33,7 @@ The <a href="http://www.drao-ofr.hia-iha.nrc-cnrc.gc.ca/26msurvey/data.html"
 <li>
 The Schlegel, Finkbeiner, and Davis
     (<a href="http://lanl.arxiv.org/abs/astro-ph/9710327" >astro-ph/9710327</a>,
-     <a href="http://adsabs.harvard.edu/abs/1998ApJ...500..525S" >ApJ. 500, p.525</a>),
+     <a href="http://www.journals.uchicago.edu/ApJ/journal/contents/ApJ/v500n2.html" >ApJ. 500, p.525</a>),
     combined
     <a href="http://astro.berkeley.edu/davis/dust/index.html" >COBE/DIRBE-IRAS/SISSA dust emission map</a>
 </li>
@@ -74,7 +63,6 @@ theoretical spectra of CMB anisotropy. The HEALPix synfast
 program reads in the output of these applications to allow one to
 generate random realizations of the observable CMB sky
 </li>
-
 <li>
 The 
 <a href="http://cosmologist.info/lenspix" >
@@ -83,20 +71,8 @@ software can be used to simulate lensed polarized CMB maps in HEALPix format usi
 </li>
 
 <li>
-The <a href="http://www.apc.univ-paris7.fr/~delabrou/PSM/psm.html">Planck Sky Model</a> 
-to simulate the IR and submm sky
-</li>
-
-<li>
-<a href="http://galprop.stanford.edu/index.php">GALPROP</a>: 
-Numerical code for calculating the propagation of relativistic charged particles 
-and the diffuse emissions they produce (now compatible with HEALPix 3.11 and newer)
-</li>
-
-<li>
 Visualization tools supporting HEALPix maps in FITS format:
-<a href="http://aladin.u-strasbg.fr/">Aladin&nbsp;Sky&nbsp;Atlas</a> 
-(which can overlay any astronomical map or catalog), 
+<a href="http://aladin.u-strasbg.fr/">Aladin&nbsp;Sky&nbsp;Atlas</a> (which can overlay any astronomical map or catalog), 
 <a href="http://helios.av.it.pt/projects/healpixviewer">HealpixViewer</a>,
 <a href="http://www.ast.cam.ac.uk/~vlad/univiewer/index.html">Univiewer</a>,
 <a href="http://lambda.gsfc.nasa.gov/toolbox/tb_skyviewer_ov.cfm">SkyViewer</a>
@@ -105,40 +81,32 @@ Visualization tools supporting HEALPix maps in FITS format:
 <li>
 <a href="https://github.com/healpy/healpy">Healpy</a>: 
 python wrapper to HEALPix (now included in HEALPix package)
-</li>
+  </li>
 
 <li>
-<a href="http://www.apc.univ-paris7.fr/APC_CS/Recherche/Adamis/MIDAS09/software/s2hat/s2hat.html">S2Hat</a>:
-Scalable Spherical Harmonics transforms
-</li>
+<a href="http://prof.planck.fr/article141.html" > PolSPICE</a>: 
+Temperature+Polarization power spectrum extraction tool dealing with the effects the
+cut-sky, beam smoothing, noise contamination, ...
+    </li>
 
 <li>
-<a href="http://www2.iap.fr/users/hivon/software/PolSpice" > PolSPICE</a>: 
-Temperature+Polarization angular power spectrum extraction tool dealing with the effects of
-cut-sky, beam smoothing, noise contamination...
-</li>
-
-<li>
-<a href="http://lcdm.astro.illinois.edu/code/aps.html">APS</a>:
-Quadratic estimator of the galaxy angular power spectrum
-</li>
-
-<li>
-<a href="http://www2.iap.fr/users/sousbie/web/html/indexd41d.html?"> DisPerSE</a>: 
-Automatic identification of persistent structures in 2D & 3D
+<a href="http://www2.iap.fr/users/sousbie/web/html/indexd41d.html?"> DisPerSE</a>: Automatic identification of persistent structures in 2D & 3D
 </li>
 
 <li>
 Wavelets on the Sphere: 
-<a href="http://www.cosmostat.org//isap.html">iSAP</a>, 
+<a href="http://jstarck.free.fr/isap.html">iSAP</a>, 
     <a href="http://irfu.cea.fr/en/Phocea/Vie_des_labos/Ast/ast_visu.php?id_ast=895">MRS</a>,
     <a href="http://www.s2let.org/">S2LET</a>, 
-    <a href="https://gitorious.org/spherelib">spherelib (previously SphereLab)</a>
+    <a href="http://www.apc.univ-paris7.fr/Downloads/adamis/spherelab/spherelab.html">SphereLab</a>
 </li>
 
 <li>
-<a href="http://www2.iap.fr/users/lavaux/software/flints.html">FLINTS</a>: 
-interpolation algorithm of fields sampled on a sphere
+<a href="http://guilhem.lavaux.free.fr/wordpress/?page_id=172">FLINTS</a>: interpolation algorithm of fields sampled on a sphere
+</li>
+
+<li>
+<a href="http://galprop.stanford.edu/index.php">GALPROP</a>: Numerical code for calculating the propagation of relativistic charged particles and the diffuse emissions they produce (now compatible with HEALPix 3.11)
 </li>
 
 <li>
@@ -173,7 +141,7 @@ Misc
 <a href="http://en.wikipedia.org/wiki/Healpix" >Wikipedia Page on HEALPix</a>
 </li>
 <li>
-	HEALPix on <a href="https://www.openhub.net/p/healpix">BlackDuck (previously Ohloh)</a> and
+	HEALPix on <a href="https://www.ohloh.net/p/healpix">Ohloh</a> and
 <a href="http://www.digplanet.com/wiki/HEALPix#">digplanet</a>
 </li>
 </ul>

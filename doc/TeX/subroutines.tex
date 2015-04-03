@@ -78,21 +78,6 @@ pixels) of holes found in input mask
 \sloppy
 \setcounter{secnumdepth}{0}
 \setcounter{tocdepth}{1}
-
-% CROSS-LINK
-%%%%http://tex.stackexchange.com/questions/41539/does-hyperref-work-between-two-files
-%% add xr-hyper (part of hyperref) to used packages, *BEFORE* hyperref (or html)
-\newcommand{\facname}{} % must be here because it is in idl.tex
-\newcommand{\FACNAME}{} % must be here because it is in idl.tex
-\externaldocument{idl}
-\externaldocument{facilities}
-\begin{htmlonly}
-\externallabels{.}{/tmp/idllabels.pl}
-\externallabels{.}{/tmp/facilitieslabels.pl}
-\end{htmlonly}
-
-
-%%%%
 \begin{document}
 
 \title{\healpix Fortran90 Subroutines Overview}
@@ -137,31 +122,16 @@ $\mathbf{\phi}$ & The azimuthal angle on the sphere, $\phi\in[0,2\pi[$.\\
 %% (, pow2alm\_units)}}
 
 %--------------------------------------------
-%-------------------------------------------- CHANGES
+%--------------------------------------------
 %--------------------------------------------
 \section[Changes between releases 3.00 and \hpxversion]{Changes between releases 3.00 and
 \hpxversion}
 \subsection{Version \hpxversion}
 \begin{itemize}
-	\item \healpixns-F90 routines and facilities can now also be compiled with
-the free Fortran95 compiler \textbf{g95} (\htmladdnormallink{www.g95.org}{http://www.g95.org/})
+	\item \healpix-F90 routines and facilities can now also be compiled with
+the free Fortran95 compiler \textbf{g95} (\htmladdnormallink{http://www.g95.org/}{http://www.g95.org/})
 	\item a separate {\tt build} directory is used to store the objects,
 modules, ... produced during the compilation of the source codes
-	\item bug correction in \htmlref{{\tt query\_disc}}{sub:query_disc} for
-some very small discs in standard mode
-	\item improved handling of long FITS keywords, now producing FITS files
-fully compatible with the
-\htmladdnormallink{\tt PyFITS}{http://www.stsci.edu/institute/software_hardware/pyfits} 
-and 
-{\tt Astropy} (\htmladdnormallink{www.astropy.org}{http://www.astropy.org/})
-{\tt Python} libraries
-	\item improved FITS file parsing in 
-\htmlref{{\tt generate\_beam}}{sub:generate_beam},
-affecting the external $B(l)$ reading in the F90 facilities 
-\htmlref{{\tt alteralm}}{fac:alteralm}, 
-\htmlref{{\tt synfast}}{fac:synfast}, 
-\htmlref{{\tt sky\_ng\_sim}}{fac:sky_ng_sim}, 
-\htmlref{{\tt smoothing}}{fac:smoothing}.
 \end{itemize}
 
 \subsection{Version 3.11}
@@ -179,7 +149,7 @@ affecting the external $B(l)$ reading in the F90 facilities
 \subsection{Version 3.10}
 \label{sub:new3p10}
 \begin{itemize}
-	\item Support for {\tt cfitsio} ''Extended File Name Syntax'', and usage of {\tt
+	\item Support for {\tt cfitsio} 'Extended File Name Syntax'', and usage of {\tt
 libsharp} Spherical Harmonics Transform library. See \linklatexhtml{''Fortran
 Facilities''}{facilities.pdf}{facilities.htm} for details.
 %

@@ -25,42 +25,6 @@
 ;  For more information about HEALPix see http://healpix.sourceforge.net
 ;
 ; -----------------------------------------------------------------------------
-function parse_planck_colorstring, color, colshift
-; -----------------------
-;   number   -> number
-;  'number'  -> number
-;  'planckN' -> colshift + N
-;  'other'   -> Error !
-;
-; ------------------------
-
-if size(/tname, color) eq 'STRING' then begin
-    col = strupcase(strcompress(color,/remove_all)); upper case, no blank
-    case col of
-        'PLANCK1':  color_out = colshift+1
-        'PLANCK2':  color_out = colshift+2
-        '+PLANCK1': color_out = colshift+1
-        '+PLANCK2': color_out = colshift+2
-        '-PLANCK1': color_out = -(colshift+1)
-        '-PLANCK2': color_out = -(colshift+2)
-        else: begin
-            On_IOError, bad
-            reads,format='(d)', col, color_out
-        end
-    endcase
-endif else begin
-    color_out = color
-endelse
-
-return, color_out
-
-bad:
-color_out=0
-message_patch,'Unknown color provided: '+color, level=-1
-
-end
-; -----------------------------------------------------------------------------
-
 pro proj2out, planmap, Tmax, Tmin, color_bar, dx, title_display, sunits, $
               coord_out, do_rot, eul_mat, planvec, vector_scale, $
               CHARSIZE=charsize, COLT=colt, CROP=crop, GIF = gif, GRATICULE = graticule, $
@@ -75,8 +39,7 @@ pro proj2out, planmap, Tmax, Tmin, color_bar, dx, title_display, sunits, $
               IGRATICULE = igraticule, HBOUND = hbound, DIAMONDS = diamonds, WINDOW = window_user, $
               TRANSPARENT = transparent, EXECUTE=execute, SILENT=silent, GLSIZE=glsize, IGLSIZE=iglsize, $
               SHADEMAP=SHADEMAP, RETAIN=retain, TRUECOLORS=truecolors, CHARTHICK=charthick, $
-              STAGGER=stagger, AZEQ=azeq, JPEG=jpeg, BAD_COLOR=bad_color, BG_COLOR=bg_color, FG_COLOR=fg_color, $
-              PDF=pdf
+              STAGGER=stagger, AZEQ=azeq, JPEG=jpeg, BAD_COLOR=bad_color, BG_COLOR=bg_color, FG_COLOR=fg_color
 
 ;===============================================================================
 ;+
@@ -101,7 +64,7 @@ pro proj2out, planmap, Tmax, Tmin, color_bar, dx, title_display, sunits, $
 ;              ORTHOGRAPHIC=orthographic, $
 ;              FLIP=flip, HALF_SKY=half_sky,COORD_IN=coord_in, IGRATICULE=,
 ;              HBOUND=, DIAMONDS =, WINDOW =, TRANSPARENT=, EXECUTE=, SILENT=
-;              GLSIZE=, IGLSIZE=, SHADEMAP=, STAGGER=, AZEQ=, JPEG=, PDF=
+;              GLSIZE=, IGLSIZE=, SHADEMAP=, STAGGER=, AZEQ=, JPEG=
 ;
 ;   for more information, see Gnomview.pro Mollview.pro
 ;
@@ -128,7 +91,6 @@ pro proj2out, planmap, Tmax, Tmin, color_bar, dx, title_display, sunits, $
 ;                  supports CHARTHICK
 ;   Jan 2012, EH, turns off GRAT, IGRAT, HBOUND, OUTLINE when STAGGER is set
 ;                 added support of AZEQ and JPEG
-;   Dec 2014, EH, added PDF
 ;
 ;
 ; 2 problems with write_png,...,/transparent in GDL:
@@ -140,17 +102,6 @@ pro proj2out, planmap, Tmax, Tmin, color_bar, dx, title_display, sunits, $
 ;-
 ;===============================================================================
 
-do_gif  = keyword_set(gif)
-do_png  = keyword_set(png)
-do_jpeg = keyword_set(jpeg)
-do_ps   = keyword_set(ps)
-do_pdf  = keyword_set(pdf)
-if (do_gif + do_png + do_jpeg + do_ps + do_pdf gt 1) then begin
-    message,'Choose either GIF, JPEG, PDF, PNG or PS output'
-endif
-do_image = (do_gif || do_png || do_jpeg)
-do_print = (do_ps || do_pdf)
-
 identify_projection, projtype, projection=projection, mollweide=mollweide, gnomic=gnomic, cartesian=cartesian, orthographic=orthographic,  diamonds = diamonds, azeq=azeq
 do_gnom = 0
 do_moll = 0
@@ -158,6 +109,11 @@ do_cart = 0
 do_orth = 0
 do_azeq = 0
 do_fullsky = 0 ; dummy, only matters for orthview
+do_gif = keyword_set(gif)
+do_png = keyword_set(png)
+do_ps  = keyword_set(ps)
+do_jpeg  = keyword_set(jpeg)
+do_image = (do_gif || do_png || do_jpeg)
 do_true = keyword_set(truecolors)
 do_crop = keyword_set(crop)
 
@@ -166,15 +122,15 @@ do_polamplitude = (polarization[0] eq 1)
 do_poldirection = (polarization[0] eq 2)
 do_polvector    = (polarization[0] eq 3)
 ;-------------------------------------------------
-in_gdl = 0 ;is_gdl()
+in_gdl = is_gdl()
 in_idl = ~in_gdl
+;if (do_ps) then 
 test_preview
 @idl_default_previewer ; defines the paper size
-if (do_print and undefined(papersize)) then papersize = 'a4'
+if (do_ps and undefined(papersize)) then papersize = 'a4'
 
 xsize = (size(planmap))(1)
 ysize = (size(planmap))(2)
-w_pos = (do_crop) ? [0.00, 0.00, 1.00, 1.00] : [0.00, 0.10, 1.00, 0.90]
 
 if (projtype eq 2) then begin
 ;  ---- Gnomonic specific definitions for the plot ----
@@ -183,6 +139,7 @@ if (projtype eq 2) then begin
     proj_big   = 'Gnomic'
     do_gnom    = 1
 
+;     du_dv = 1.                  ; aspect ratio
     du_dv = xsize/float(ysize)                  ; aspect ratio
     fudge = 1.00                ; 
     xc = (xsize-1)/2. & delta_x = (xsize-1 - xc)
@@ -191,8 +148,8 @@ if (projtype eq 2) then begin
     umin = - dx * xc * fudge & umax = dx * xc * fudge
     vmin = - dx * yc * fudge & vmax = dx * yc * fudge
 ; position of the rectangle in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.00 & w_xur = 1.00 & w_dx = w_xur - w_xll
+    w_yll = 0.10 & w_yur = 0.90 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1.4
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -205,6 +162,9 @@ if (projtype eq 2) then begin
     cring_dx = 1./15.
     cring_dy = 1./15.
     cring_xll = .025
+; cring_xur = .025 + cring_dx
+; cring_yur = w_yll
+; cring_yll = cring_yur - cring_dy
     cring_yll = .025
 ; location of astro. coordinate
     x_aspos = 0.5
@@ -215,11 +175,13 @@ if (projtype eq 2) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.915
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 15.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+;yoffset = 2  ; Europe (A4)
+;yoffset = 1                 ; US (letter)
     endif
 endif
 
@@ -238,8 +200,8 @@ if (projtype eq 1) then begin
     umin = - du_dv * fudge & umax = du_dv * fudge
     vmin = - fudge         & vmax =         fudge
 ; position of the egg in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.0 & w_xur = 1.0 & w_dx = w_xur - w_xll
+    w_yll = 0.1 & w_yur = 0.9 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1./.8
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -252,6 +214,9 @@ if (projtype eq 1) then begin
     cring_dx = 1./10.
     cring_dy = 1./10.
     cring_xll = .025
+; cring_xur = .025 + cring_dx
+; cring_yur = w_yll
+; cring_yll = cring_yur - cring_dy
     cring_yll = .025
 ; location of pol vector scale
     vscal_x = 0.05
@@ -259,11 +224,13 @@ if (projtype eq 1) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.905
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 26.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+    ;yoffset = 2  ; Europe (A4)
+    ;yoffset = 1                 ; US (letter)
     endif
 endif
 
@@ -282,8 +249,8 @@ if (projtype eq 5) then begin
     umin = - du_dv * fudge & umax = du_dv * fudge
     vmin = - fudge         & vmax =         fudge
 ; position of the egg in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.0 & w_xur = 1.0 & w_dx = w_xur - w_xll
+    w_yll = 0.1 & w_yur = 0.9 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1./.8
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -296,6 +263,9 @@ if (projtype eq 5) then begin
     cring_dx = 1./10.
     cring_dy = 1./10.
     cring_xll = .025
+; cring_xur = .025 + cring_dx
+; cring_yur = w_yll
+; cring_yll = cring_yur - cring_dy
     cring_yll = .025
 ; location of pol vector scale
     vscal_x = 0.05
@@ -303,11 +273,13 @@ if (projtype eq 5) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.905
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 26.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+    ;yoffset = 2  ; Europe (A4)
+    ;yoffset = 1                 ; US (letter)
     endif
 endif
 
@@ -328,8 +300,8 @@ if (projtype eq 4) then begin
     umin = - du_dv * fudge & umax = du_dv * fudge
     vmin = - fudge         & vmax =         fudge
 ; position of the disc in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.0 & w_xur = 1.0 & w_dx = w_xur - w_xll
+    w_yll = 0.1 & w_yur = 0.9 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1./.8
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -342,6 +314,9 @@ if (projtype eq 4) then begin
     cring_dx = 1./10.
     cring_dy = 1./10.
     cring_xll = .025
+; cring_xur = .025 + cring_dx
+; cring_yur = w_yll
+; cring_yll = cring_yur - cring_dy
     cring_yll = .025
 ; location of pol vector scale
     vscal_x = 0.05
@@ -349,11 +324,13 @@ if (projtype eq 4) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.905
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 26.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+    ;yoffset = 2  ; Europe (A4)
+    ;yoffset = 1                 ; US (letter)
     endif
 endif
 
@@ -373,8 +350,8 @@ if (projtype eq 3) then begin
     umin = - dx * xc * fudge & umax = dx * xc * fudge
     vmin = - dx * yc * fudge & vmax = dx * yc * fudge
 ; position of the rectangle in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.00 & w_xur = 1.00 & w_dx = w_xur - w_xll
+    w_yll = 0.10 & w_yur = 0.90 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1.4
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -397,11 +374,13 @@ if (projtype eq 3) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.915
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 15.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+    ;yoffset = 2  ; Europe (A4)
+    ;yoffset = 1                 ; US (letter)
     endif
 endif
 
@@ -421,8 +400,8 @@ if (projtype eq 6) then begin
     umin = - dx * xc * fudge & umax = dx * xc * fudge
     vmin = - dx * yc * fudge & vmax = dx * yc * fudge
 ; position of the rectangle in the final window
-    w_xll = w_pos[0] & w_xur = w_pos[2] & w_dx = w_xur - w_xll
-    w_yll = w_pos[1] & w_yur = w_pos[3] & w_dy = w_yur - w_yll
+    w_xll = 0.00 & w_xur = 1.00 & w_dx = w_xur - w_xll
+    w_yll = 0.10 & w_yur = 0.90 & w_dy = w_yur - w_yll
     w_dx_dy = w_dx / w_dy       ; 1.4
 ; color bar, position, dimension
     cbar_dx = 1./3.
@@ -445,14 +424,17 @@ if (projtype eq 6) then begin
 ; location of title and subtitle
     x_title = 0.5 & y_title = 0.95
     x_subtl = 0.5 & y_subtl = 0.915
-    if (do_print) then begin
+    if (do_ps) then begin
 ; default X dimension of hardcopy (cm)
         hxsize_def = 15.
 ; offset along the long axis of the page
         yoffset = (papersize eq 'a4') ? 2 : 1
+    ;yoffset = 2  ; Europe (A4)
+    ;yoffset = 1                 ; US (letter)
     endif
 endif
 ;====================================================
+
 do_shade = (do_orth && defined(shademap))
 ; set color table and character size
 ct          = defined(colt)     ? colt     : 33
@@ -462,11 +444,6 @@ be_verbose  = ~keyword_set(silent)
 
 ; alter the color table
 ; -----------------------
-; save the color and background before playing with the color table
-my_background = !p.background
-my_color      = !p.color
-back      = REPLICATE(BYTE(!P.BACKGROUND),xsize,(ysize*cbar_dy*w_dx_dy)>1)
-
 if (be_verbose) then print,'... computing the color table ...'
 if (do_true) then begin
     loadct, 0, /silent
@@ -481,19 +458,10 @@ endif else begin
         color_names = '' ; seems necessary on some (?) IDL version
         loadct, get_names = color_names
         nmax_col = n_elements(color_names)-1
-        colshift = 1000
-        ct = parse_planck_colorstring(ct, colshift)
-        absct = abs(ct)
-        if (absct le nmax_col) then begin
-            LOADCT, absct, /SILENT
+        if (abs(ct) le nmax_col) then begin
+            LOADCT, abs(ct), /SILENT
         endif else begin
-            absct_test = absct-colshift
-            if (absct_test eq 1 || absct_test eq 2) then begin
-                planck_colors, absct_test, get=planck_rgb
-                tvlct, planck_rgb
-            endif else begin
-                if (be_verbose) then print,'... color table '+strtrim(abs(ct),2)+' unknown, using current color table instead ...'
-            endelse
+            if (be_verbose) then print,'... color table '+strtrim(abs(ct),2)+' unknown, using current color table instead ...'
         endelse
     endelse
     tvlct,red,green,blue,/get
@@ -516,42 +484,35 @@ TVLCT,red,green,blue
 ; open the device
 ; ---------------------
 old_device=!d.name
+my_background = !p.background
+my_color = !p.color
 if (be_verbose) then print,'... here it is.'
 titlewindow = proj_big+' projection : ' + title_display
+back      = REPLICATE(BYTE(!P.BACKGROUND),xsize,(ysize*cbar_dy*w_dx_dy)>1)
 use_z_buffer = 0 ; set it to 0 (for postscript) 2010-03-18
-if (do_print) then begin
+if (do_ps) then begin
     ; 2009-11-04: 'ps' in GDL does not support: COLOR, BITS, XSIZE, ...
     if DEFINED(hxsize) then hxsize = (hxsize > 3) < 200 else hxsize = hxsize_def
-    hysize = hxsize / du_dv * w_dx_dy
-    if (do_ps) then begin
-        if (size(ps,/tname) ne 'STRING')  then file_ps = 'plot_'+proj_small+'.ps' else file_ps = ps[0]
-    endif
-    if (do_pdf) then begin
-        if (size(pdf,/tname) ne 'STRING') then file_pdf = 'plot_'+proj_small+'.pdf' else file_pdf = pdf[0]
-        file_ps = file_pdf+'TEMP.ps'
-    endif
+    if ((size(ps))(1) ne 7) then file_ps = 'plot_'+proj_small+'.ps' else file_ps = ps
     SET_plot,'ps'
     do_portrait = 0
     do_landscape = 0
-    device,encapsulated=0 ; make sure NOT to be encapsulated, since it would screw up the landscape mode,
-                          ; and the BBox is fine in non-encapsulated mode anyway  (2014-12-16)
     DEVICE, FILE=file_ps, /COLOR, BITS = 8 ; opens the file that will receive the PostScript plot
     if (do_gnom || (do_orth && ~do_fullsky)) then begin
         do_portrait = 1
-        DEVICE, /PORTRAIT,  XSIZE=hxsize, YSIZE=hysize, XOFFSET=4, YOFFSET=2
+        DEVICE, /PORTRAIT,  XSIZE=hxsize, YSIZE=hxsize/du_dv*w_dx_dy, XOFFSET=4, YOFFSET=2
     endif
     if (do_moll || (do_orth && do_fullsky)) then begin
         do_landscape = 1
-        DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hysize, XOFFSET=4, YOFFSET=hxsize+yoffset
+        DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hxsize/du_dv*w_dx_dy, XOFFSET=4, YOFFSET=hxsize+yoffset
     endif
     if (do_cart || do_azeq) then begin
         do_landscape = 1
-;         DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hysize, XOFFSET=4, YOFFSET=hxsize+yoffset
-        DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hysize, XOFFSET=0, YOFFSET=hxsize+yoffset
+;         DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hxsize/du_dv*w_dx_dy, XOFFSET=4, YOFFSET=hxsize+yoffset
+        DEVICE, /LANDSCAPE, XSIZE=hxsize, YSIZE=hxsize/du_dv*w_dx_dy, XOFFSET=0, YOFFSET=hxsize+yoffset
     endif
     TVLCT,red,green,blue
-;    thick_dev = 2. ; device dependent thickness factor
-    thick_dev = (!P.THICK ne 0) ? 2.*!P.THICK : 2. ; device dependent thickness factor
+    thick_dev = 2. ; device dependent thickness factor
 endif else begin ; X, png, gif or jpeg output
     idl_window = defined(window_user) ? window_user : 32 ; idl_window = 32 or window_user
     free_window    =  (idl_window gt 31) ; random  window if idl_window > 31
@@ -576,19 +537,13 @@ endif else begin ; X, png, gif or jpeg output
     ;to_patch = ((!d.n_colors GT 256) && do_image && in_idl)
     n_colors = !d.n_colors
     if (in_gdl && (!d.name eq 'X' || !d.name eq 'WIN')) then begin ; work-around for GDL0.9.2 bug (!d.n_colors gets correct only after first call to WINDOW)
-        device, window_state=ws0
-        device, get_visual_depth=gvd, window_state=ws1
-        junk = where(ws1-ws0 eq 1, njunk) 
-        if (njunk eq 1)  then wdelete, junk[0] ; GDL 0.9.5 bug: spurious window created
+        device,get_visual_depth=gvd
         n_colors = 2L^gvd
     endif
-    ;;;;help,n_colors
     to_patch = (n_colors GT 256 && do_image)
     if (in_gdl) then begin
         if (use_z_buffer) then device else device,decomposed=0 ; in GDL0.9.2, decomposed is only available (but ignored) when device='X', or unvalid when device='Z'
-        ;if (to_patch) then loadct,0,/silent ; emulate decomposed
-        device, decomposed = to_patch ; does it work for GDL 0.9.5 ?
-        ;;;;;;device, decomposed = 0 ; does it work for GDL 0.9.5 ?
+        if (to_patch) then loadct,0,/silent ; emulate decomposed
     endif else begin
         device, decomposed = use_z_buffer || to_patch
     endelse
@@ -613,28 +568,17 @@ endif else begin ; X, png, gif or jpeg output
         endif
     endelse
     if (in_idl) then TVLCT,red,green,blue
-    ;thick_dev = 1. ; device dependent thickness factor
-    thick_dev = (!P.THICK ne 0) ? 1.*!P.THICK : 1. ; device dependent thickness factor
+    thick_dev = 1. ; device dependent thickness factor
 endelse
 !p.background = my_background
 !p.color = my_color
 ; -------------------------------------------------------------
 ; make the plot
 ; -------------------------------------------------------------
-; window,/free
-; print,!p.background
-; print,!p.color
-; tvlct,/get,rgb
-; print,rgb[0:5,0:2]
-; plot,[1,2],title='Done'
-; return
-; print,!p.background,!p.color,red[0:3],green[0:3],blue[0:3]
-; print,back[0:4,0:4]
-
 myplot={urange:[umin,umax],vrange:[vmin,vmax],position:[w_xll,w_yll,w_xur,w_yur],xstyle:5,ystyle:5}
 plot, /nodata, myplot.urange, myplot.vrange, pos=myplot.position, XSTYLE=myplot.xstyle, YSTYLE=myplot.ystyle
-; if (use_z_buffer) then begin; Set the background when doing a plot in Z buffer
-if (do_image) then begin; set the background when doing PNG/GIF/JPG
+; Set the background when doing a plot in Z buffer
+if (use_z_buffer) then begin
     l64ysize = long64(ysize*w_dx_dy)
     if ~do_true then begin 
         tv, replicate(!p.background, xsize, l64ysize)
@@ -653,9 +597,9 @@ if (do_shade && ~do_image) then begin
     image3d[*,*,0] = uint( (256. * red  [image] * shademap) < 65535.)
     image3d[*,*,1] = uint( (256. * green[image] * shademap) < 65535.)
     image3d[*,*,2] = uint( (256. * blue [image] * shademap) < 65535.)
-    if (do_print) then loadct,0,/silent ; must be in grey-scale for TrueColor PS output
+    if (do_ps) then loadct,0,/silent ; must be in grey-scale for TrueColor PS output
     TV, bytscl(image3d),w_xll,w_yll,/normal,xsize=1.,true=3
-    if (do_print) then tvlct,red,green,blue ; revert to custom color table
+    if (do_ps) then tvlct,red,green,blue ; revert to custom color table
     image3d = 0
 ; endif else if (do_true  && ~do_image) then begin
 endif else if (do_true) then begin
@@ -665,9 +609,9 @@ endif else if (do_true) then begin
     image3d[*,*,0] = red  [planmap[*,*,0]]
     image3d[*,*,1] = green[planmap[*,*,1]]
     image3d[*,*,2] = blue [planmap[*,*,2]]
-;;;    if (do_print) then loadct,0,/silent; must be in grey-scale for TrueColor PS output
+;;;    if (do_ps) then loadct,0,/silent; must be in grey-scale for TrueColor PS output
     tv, image3d, w_xll,w_yll,/normal,xsize=1.,true=3
-;;;    if (do_print) then tvlct,red,green,blue ; revert to custom color table
+;;;    if (do_ps) then tvlct,red,green,blue ; revert to custom color table
     image3d = 0
 endif else begin
     TV, planmap,w_xll,w_yll,/normal,xsize=1.
@@ -675,7 +619,7 @@ endelse
 hpxv11 = 0
 
 ; the polarisation color ring
-if (~do_crop && do_poldirection) then begin
+if (do_poldirection) then begin
     npring = xsize*cring_dx
     one = replicate(1.,npring)
     yy  = one # (findgen(npring) - npring/2)
@@ -720,9 +664,9 @@ if (do_polvector) then begin
 endif
 
 ;  the color bar
-if (~(do_crop || keyword_set(nobar) || do_poldirection || do_true)) then begin
+if (~(keyword_set(nobar) || do_poldirection || do_true)) then begin
     color_bar_out = BYTE(CONGRID(color_bar,xsize*cbar_dx)) # REPLICATE(1.,(ysize*cbar_dy*w_dx_dy)>1)
-    back[xsize*cbar_xll,0] = color_bar_out
+    back(xsize*cbar_xll,0) = color_bar_out
     TV, back,0,cbar_yll,/normal,xsize = 1.
     ; For Totor <<<<<<<<<<<<<<<<<<<<<<<<<
 ;     plot, /nodata, [tmin,tmax],[0,1],pos=[cbar_xll,cbar_yll,cbar_xur,cbar_yur],/noerase
@@ -730,7 +674,7 @@ if (~(do_crop || keyword_set(nobar) || do_poldirection || do_true)) then begin
 endif
 
 ;  the color bar labels
-if (~(do_crop || keyword_set(nobar) || keyword_set(nolabels) || do_true || do_poldirection)) then begin
+if (~(keyword_set(nobar) || keyword_set(nolabels) || do_true || do_poldirection)) then begin
     format = '(g10.2)'
     if ((Tmax - Tmin) ge 50 and MAX(ABS([Tmax,Tmin])) le 1.e5) then format='(i8)'
     if ((Tmax - Tmin) ge 5  and MAX(ABS([Tmax,Tmin])) le 1.e2) then format='(f6.1)'
@@ -743,7 +687,7 @@ if (~(do_crop || keyword_set(nobar) || keyword_set(nolabels) || do_true || do_po
 endif
 
 ; the polarisation vector scale
-if (~do_crop && ~keyword_set(nobar)  && do_polvector) then begin
+if (~keyword_set(nobar)  && do_polvector) then begin
     vp_plot = 5*pol_rescale[0] /pgparam[0]; length of ruler on plot
     vp_phys = 5*vector_scale[0]/pgparam[0] ; 'physical' length of ruler
     plots, vscal_x*[1,1], vscal_y+[0, vp_plot]*w_dy, /normal
@@ -754,13 +698,11 @@ if (~do_crop && ~keyword_set(nobar)  && do_polvector) then begin
 endif
 
 ;  the title
-if (~do_crop) then begin
-    if (~ keyword_set(titleplot)) then title= '!6'+title_display else title='!6'+titleplot
-    XYOUTS, x_title, y_title ,title, align=0.5, /normal, chars=1.6*charsfactor, charthick=mycharthick
-endif
+if (~ keyword_set(titleplot)) then title= '!6'+title_display else title='!6'+titleplot
+XYOUTS, x_title, y_title ,title, align=0.5, /normal, chars=1.6*charsfactor, charthick=mycharthick
 
 ;  the subtitle
-if (~do_crop && keyword_set(subtitle)) then begin
+if (keyword_set(subtitle)) then begin
     XYOUTS, x_subtl, y_subtl ,'!6 '+subtitle, align=0.5, /normal, chars=1.6*.75*charsfactor, charthick=mycharthick
 endif
 
@@ -768,7 +710,7 @@ endif
 
 if (do_gnom) then begin
 ;  astronomical position of central point
-    if (~do_crop && ~keyword_set(noposition)) then begin
+    if (not keyword_set(noposition)) then begin
         if (undefined(rot_ang)) then rot_ang = [0.,0.,0.] else rot_ang = ([rot_ang,0,0])(0:2)
         rot_0 = STRTRIM(STRING(rot_ang(0),form='(f6.1)'),2)
         rot_1 = STRTRIM(STRING(rot_ang(1),form='(f6.1)'),2)
@@ -901,28 +843,51 @@ if do_image then begin
             if (itr/2 and 1) then transp_colors[idx_white] = 0B ; turn white into transparent
         endif
     endif
-    ; write GIF/JPG/PNG
-    if do_gif then write_gif,file_image, image,red,green,blue
-    if do_png then begin
-        if (do_shade || do_true) then begin
-            write_png, file_image, image3d
-        endif else begin
-            if (keyword_set(transparent)) then begin
-                mytransp = (in_idl) ? transp_colors  : 0 ; transp_colors[image]
-                write_png,file_image, image,red,green,blue, transparent=mytransp
+    if do_crop then begin
+        y_crop_low = round(w_yll * n_elements(image[0,*])) & y_crop_hi  = y_crop_low + ysize - 1
+        cropped = image[*,y_crop_low:y_crop_hi]
+        if do_gif then write_gif,file_image,cropped,red,green,blue
+        if do_png then begin
+            if (do_shade || do_true) then begin
+                write_png, file_image, image3d[*,*,y_crop_low:y_crop_hi]
             endif else begin
-                write_png,file_image, image,red,green,blue
+                if (keyword_set(transparent)) then begin
+                    mytransp = (in_idl) ? transp_colors  :  0 ; transp_colors[cropped]
+                    write_png,file_image,cropped,red,green,blue, transparent=mytransp
+                endif else begin
+                    write_png,file_image,cropped,red,green,blue
+                endelse
             endelse
-        endelse
-    endif
-    if do_jpeg then begin
-        if (do_shade || do_true) then begin
-            write_jpg_custom, file_image, image3d,             true=1, quality=jquality
-        endif else begin
-            write_jpg_custom, file_image, image,red,green,blue,        quality=jquality
-        endelse
-    endif
-    ; back to X window
+        endif
+        if do_jpeg then begin
+            if (do_shade || do_true) then begin
+                write_jpg_custom, file_image, image3d[*,*,y_crop_low:y_crop_hi], true=1, quality=jquality
+            endif else begin
+                write_jpg_custom, file_image, cropped, red, green, blue,                 quality=jquality
+            endelse
+        endif
+    endif else begin ; uncropped
+        if do_gif then write_gif,file_image, image,red,green,blue
+        if do_png then begin
+            if (do_shade || do_true) then begin
+                write_png, file_image, image3d
+            endif else begin
+                if (keyword_set(transparent)) then begin
+                    mytransp = (in_idl) ? transp_colors  : 0 ; transp_colors[image]
+                    write_png,file_image, image,red,green,blue, transparent=mytransp
+                endif else begin
+                    write_png,file_image, image,red,green,blue
+                endelse
+            endelse
+        endif
+        if do_jpeg then begin
+            if (do_shade || do_true) then begin
+                write_jpg_custom, file_image, image3d,             true=1, quality=jquality
+            endif else begin
+                write_jpg_custom, file_image, image,red,green,blue,        quality=jquality
+            endelse
+        endif
+    endelse
     if (to_patch && ~use_z_buffer) then begin 
         if (in_gdl) then begin
 ; unresolved GDL0.9.2 bug: if a window is already open for a given color table
@@ -953,29 +918,15 @@ if do_image then begin
 endif
 
 
-if (do_print) then begin
+if (do_ps) then begin
     device,/close
     set_plot,old_device
-    if (do_ps) then begin
-        if (be_verbose) then print,'PS file is in '+file_ps
-        if (keyword_set(preview)) then begin
-            test_preview, found_preview ;, /crash
-            if (found_preview gt 0) then begin
-                resolve_routine,'preview_file',/compile_full_file,/either
-                preview_file, file_ps, /ps, landscape=do_landscape
-            endif
-        endif
-    endif 
-    if (do_pdf) then begin
-        ;cgPS2PDF, file_ps, file_pdf, /delete_ps, pagetype=papersize, /showcmd
-        epstopdf, file_ps, file_pdf, /delete_ps, /silent
-        if (be_verbose) then print,'PDF file is in '+file_pdf
-        if (keyword_set(preview)) then begin
-            test_preview, found_preview ;, /crash
-            if (found_preview gt 0) then begin
-                resolve_routine,'preview_file',/compile_full_file,/either
-                preview_file, file_pdf, /pdf
-            endif
+    if (be_verbose) then print,'PS file is in '+file_ps
+    if (keyword_set(preview)) then begin
+        test_preview, found_preview ;, /crash
+        if (found_preview gt 0) then begin
+            resolve_routine,'preview_file',/compile_full_file,/either
+            preview_file, file_ps, /ps, landscape=do_landscape
         endif
     endif
 endif else if (use_z_buffer) then begin

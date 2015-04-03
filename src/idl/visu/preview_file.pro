@@ -25,7 +25,7 @@
 ;  For more information about HEALPix see http://healpix.sourceforge.net
 ;
 ; -----------------------------------------------------------------------------
-pro preview_file, file, ps=ps, gif=gif, png=png, jpeg=jpeg, landscape=landscape, pdf=pdf
+pro preview_file, file, ps=ps, gif=gif, png=png, jpeg=jpeg, landscape=landscape
 ;+
 ; NAME:
 ;     preview_file
@@ -39,7 +39,7 @@ pro preview_file, file, ps=ps, gif=gif, png=png, jpeg=jpeg, landscape=landscape,
 ;
 ;
 ; CALLING SEQUENCE:
-;     preview_file, file, GIF=, JPEG=,  LANDSCAPE=, PNG=, PS=, PDF=
+;     preview_file, file, GIF=, JPEG=,  LANDSCAPE=, PNG=, PS=
 ;
 ; INPUTS:
 ;     file
@@ -124,6 +124,7 @@ blank=' '
 ; POSTSCRIPT
 ; ==========
 
+
 case ps_scom of
     'gv' : begin
     ; gv
@@ -153,23 +154,6 @@ endcase
 
 if do_bbox then ps_pps = ' ' ; use default BBox
 ps_opt = ps_ext + ps_pps
-;;;print,ps_opt+ps_lsc
-
-
-; PDF
-; ===
-
-case pdf_scom of
-    else : begin
-    ; unknown : neutral options
-        pdf_pps = ' '
-        pdf_lsc = ' '
-        pdf_ext = ' '
-    end
-endcase
-
-if do_bbox then pdf_pps = ' ' ; use default BBox
-pdf_opt = pdf_ext + pdf_pps
 ;;;print,ps_opt+ps_lsc
 
 ; PNG and GIF
@@ -220,11 +204,6 @@ endcase
 if (keyword_set(ps)) then begin
     if ( ~ keyword_set(landscape)) then ps_lsc = ' '
     command = ps_com + ps_opt + ps_lsc + blank + fullfile + bg
-endif
-
-; PDF
-if (keyword_set(pdf)) then begin
-    command = pdf_com + pdf_opt + blank + fullfile + bg
 endif
 
 ; PNG and GIF

@@ -26,7 +26,7 @@ package healpix.essentials;
     vecmath.jar, and also because the function Vector3d.angle(Vector3d v1) is
     too inaccurate for usage in Healpix for very small angles.
 
-    @copyright (C) 2011-2015 Max-Planck-Society
+    @copyright (C) 2011 Max-Planck-Society
     @author Martin Reinecke */
 public class Vec3
   {
@@ -79,12 +79,6 @@ public class Vec3
     double d = 1./length();
     x *= d; y *= d; z *= d;
     }
-  /** Return normalized vector */
-  public Vec3 norm()
-    {
-    double d = 1./length();
-    return new Vec3(x*d,y*d,z*d);
-    }
 
   /** Angle between two vectors.
       @param v1 another vector
@@ -109,8 +103,6 @@ public class Vec3
   /** Invert the signs of all components */
   public void flip()
     { x=-x; y=-y; z=-z; }
-  public Vec3 flipped()
-    { return new Vec3(-x,-y,-z); }
 
   /** Scale the vector by a given factor
       @param n the scale factor */
@@ -167,9 +159,13 @@ public class Vec3
 
   public int hashCode()
     {
-    int result = Double.valueOf(x).hashCode();
-    result = 31 * result + Double.valueOf(y).hashCode();
-    result = 31 * result + Double.valueOf(z).hashCode();
+    long temp = x != +0.0d ? Double.doubleToLongBits(x) : 0L;
+    int result = (int) (temp ^ (temp >>> 32));
+    temp = y != +0.0d ? Double.doubleToLongBits(y) : 0L;
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = z != +0.0d ? Double.doubleToLongBits(z) : 0L;
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
     }
   }
+

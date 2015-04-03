@@ -3,9 +3,8 @@
 #=============================
 #  script to pack a release
 #
-#  cd /tmp; svn co  [-r BRANCH] https://svn.code.sf.net/p/healpix/code/trunk Healpix_[VERSION]
-#   or
-#  ./getit
+#  cd /tmp
+#  svn co  [-r BRANCH] https://svn.code.sf.net/p/healpix/code/trunk Healpix_[VERSION]
 #
 #  cd Healpix_[VERSION]
 #  ./pack
@@ -28,9 +27,7 @@ updateVersion () {
   echoLn "Enter version number ($current) "
   read answer
   [ "x$answer" != "x" ] && version="$answer"
-  #verstex=`echo $version | sed "s|\.|\\\\\\_|g"`
-  verstex=`echo $version | sed "s|\.|\\\\\\\\\\\\\\\\\\\\\\\\\\\_|g"`
-  echo $version $verstex $reldate
+  echo $version $reldate
 
   # update configure script
   infile='./configure'
@@ -70,8 +67,7 @@ updateVersion () {
   infile='./doc/Tex/hpxversion.tex'
   echoBlu "editing ${infile}"
   cat $infile |\
-      sed "s|newcommand{\\\\hpxversion}.*$|newcommand{\\\\hpxversion}{$version}|g" |\
-      sed "s|newcommand{\\\\hpxverstex}.*$|newcommand{\\\\hpxverstex}{$verstex}|g" >\
+      sed "s|newcommand{\\\\hpxversion}.*$|newcommand{\\\\hpxversion}{$version}|g" >\
       $tmpfile
   mv $tmpfile $infile
   cat $infile
@@ -93,14 +89,14 @@ updateVersion () {
   mv $tmpfile $infile
 
   # update C++ code version
-#   infile='src/cxx/cxxsupport/announce.cc'
-#   echoBlu "editing ${infile}"
-#   cat $infile | sed 's|string version =.*$|string version =\"v$version\";|g' > $tmpfile
-#   mv $tmpfile $infile
-#   infile='src/cxx/autotools/configure.ac'
-#   echoBlu "editing ${infile}"
-#   cat $infile | sed "s|AC_INIT.*|AC_INIT([healpix_cxx], [$version])|g" > $tmpfile
-#   mv $tmpfile $infile
+  infile='src/cxx/cxxsupport/announce.cc'
+  echoBlu "editing ${infile}"
+  cat $infile | sed 's|string version =.*$|string version =\"v$version\";|g' > $tmpfile
+  mv $tmpfile $infile
+  infile='src/cxx/autotools/configure.ac'
+  echoBlu "editing ${infile}"
+  cat $infile | sed "s|AC_INIT.*|AC_INIT([healpix_cxx], [$version])|g" > $tmpfile
+  mv $tmpfile $infile
 
   # update test/*.par files (2013-09)
   echoBlu "editing  test/*.par  files"
@@ -114,8 +110,7 @@ updateVersion () {
   done
 
   # update test/README file (2014-01)
-  file='test/README'
-  echoBlu "editing  $file  file"
+  echoBlu "editing  test/README  file"
   outstring="test data for HEALPix $version"
   sed -i "s|test data for HEALPix.*$|$outstring|" ${file}
   grep "$outstring" $file
@@ -125,11 +120,10 @@ updateVersion () {
 
 gettingHealpy(){
     HPY_VERSION=1.7.0
-    hpy_repo="https://pypi.python.org/packages/source/h/healpy"
     wrkdir=/tmp
     cd ${wrkdir}
 
-    wget ${hpy_repo}/healpy-${HPY_VERSION}.tar.gz --no-check-certificate -O healpy-${HPY_VERSION}.tar.gz
+    wget https://pypi.python.org/packages/source/h/healpy/healpy-${HPY_VERSION}.tar.gz --no-check-certificate -O healpy-${HPY_VERSION}.tar.gz
 
     tar -xvzpf healpy-${HPY_VERSION}.tar.gz
     \rm -rf healpy
@@ -144,12 +138,10 @@ gettingHealpy(){
 
     cd healpixsubmodule/src/cxx/autotools
     chmod ugo+x install-sh
-    \ln -sf ../../../../../cxx .
     for dir in Healpix_cxx c_utils cxxsupport libfftpack libsharp ; do
 	echo ${dir}
 	\rm -r ${dir}
-	\ln -sf cxx/${dir} .
-#	\ln -sf ../../../../../cxx/${dir} .
+	\ln -sf ../../../../../cxx/${dir} .
     done
 
     cd ${here}
@@ -157,7 +149,48 @@ gettingHealpy(){
 
 }
 
-#=======================================
+# #---------------
+# updateCopyrightDate () {
+
+#     dir=${here}
+#     instring='Copyright (C) 1997-2013'
+#     outstring='Copyright (C) 1997-2013'
+#     #tmpfile='/tmp/tmp_updatecopyright.txt'
+
+#     echo "In                $dir"
+#     echo "Changing          $instring -> $outstring"
+
+#     inlist=`find $dir -type f | grep -v \\.svn | grep -v java | grep -vi bk | xargs grep "$instring" | awk -F: '{print $1}'`
+
+#     for file in $inlist ; do
+# 	ls -l $file
+# 	grep "$instring" $file
+# 	sed -i "s|$instring|$outstring|" ${file}
+# 	grep "$outstring" $file
+#     done
+# }
+# #---------------
+# updateHEALPixWebSite () {
+
+#     dir=${here}
+#     instring='healpix.sourceforge.net'
+#     outstring='healpix.sourceforge.net'
+#     #tmpfile='/tmp/tmp_updatecopyright.txt'
+
+#     echo "In                $dir"
+#     echo "Changing          $instring -> $outstring"
+
+#     inlist=`find $dir -type f | grep -v \\.svn | grep -v java | grep -v cxx | grep -vi bk | xargs grep "$instring" | awk -F: '{print $1}'`
+
+#     for file in $inlist ; do
+# 	ls -l $file
+# 	grep "$instring" $file
+# 	sed -i "s|$instring|$outstring|" ${file}
+# 	grep "$outstring" $file
+#     done
+# }
+#---------------
+# cf hand_editions.sh
 
 NO_COLOR='\x1b[0m'
 RED_COLOR='\x1b[31;01m'
@@ -181,7 +214,7 @@ echoRed (){
 #---------------
 
 revision=`svnversion . | sed "s|[A-Z]*||g"`
-echo "Revision=${revision}"
+echo "Revison=${revision}"
 setTopDefaults
 echo "This script will destroy several files and subdirectories"
 echoLn "Are you sure you want to proceed ? [NO/yes] "
@@ -200,8 +233,8 @@ do_split=0
 # [ "$answer" == "yes" ] && do_split=1
 
 
-#echoGrn "getting healpy (python) directory"
-#gettingHealpy
+echoGrn "getting healpy (python) directory"
+gettingHealpy
 
 echoRed "removing CVS directories..."
 find . -type d -name CVS -exec \rm -rf {} \;
@@ -262,8 +295,7 @@ mkdir -p ${docautodir}/html
 \rm -f ${docautodir}/html/*
 cd doc/TeX
 make pdf
-make crossref
-make html > /dev/null
+make html
 cd $here
 
 echoGrn "dealing with Ximview doc"
@@ -298,24 +330,15 @@ done
 # cd ${here}
 # updateHEALPixWebSite
 # cd ${here}
-# cf : hand_editions.sh
 
-p='gpl_header'
-echoRed "removing $p directory..."
-[ -d ${p} ] && \rm -rf ${p}
+[ -d gpl_header ] && \rm -rf gpl_header
 
 echoRed "removing C++ make_release..."
 \rm -rf src/cxx/autotools/make_release
-\rm -rf src/cxx/make_release # 2014-12-04
-
-
-for p in getit hand_editions.sh; do
-    echo "removing ${p} ..."
-    \rm -f $p
-done
 
 echoRed "removing myself..."
 \rm -f $0
+\rm -f 'getit'
 
 echoBlu "--------------------"
 echoBlu $version $reldate
@@ -324,26 +347,24 @@ echoBlu "--------------------"
 relsuf="${version}_${shortdate}"
 package="Healpix_${relsuf}.tar.gz"
 rnfile="Healpix_${relsuf}.ReleaseNotes.txt"
-#tar_opts="-cvzpf"
-tar_opts="-czpf"
 echoBlu "creating package ../${package}"
 cd ..
-tar ${tar_opts} ${package} `basename ${here}`
+tar -cvzpf ${package} `basename ${here}`
 cd ${here}
 
 if [ $do_split == 1 ] ; then
     echo "splitting tar file"
-    tar ${tar_opts} "../Hpx_java.tar.gz" src/java
+    tar -cvzpf "../Hpx_java.tar.gz" src/java
     \rm -rf src/java
-    tar ${tar_opts} "../Hpx_test.tar.gz" test
+    tar -cvzpf "../Hpx_test.tar.gz" test
     \rm -rf test
-    tar ${tar_opts} "../Hpx_doc.tar.gz"  doc
+    tar -cvzpf "../Hpx_doc.tar.gz"  doc
     \rm -rf doc
-    tar ${tar_opts} "../Hpx_data.tar.gz" data
+    tar -cvzpf "../Hpx_data.tar.gz" data
     \rm -rf data
     
     cd ..
-    tar ${tar_opts} "Healpix_src_${relsuf}.tar.gz" `basename ${here}`
+    tar -cvzpf "Healpix_src_${relsuf}.tar.gz" `basename ${here}`
     cd ${here}
 fi
 
@@ -355,4 +376,3 @@ cat $rnfile
 cd ${here}
 
 exit
-

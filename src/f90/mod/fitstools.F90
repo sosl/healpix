@@ -67,7 +67,6 @@ module fitstools
   ! 2010-11-23: implemented support for large (>2^31-1 pixel) map IO (ie, Nside > 8192)
   !             alm related IO is still limited to l<46340
   ! 2013-12-13 : increased MAXDIM from 40 to MAXDIM_TOP
-  ! 2014-05-02: fixed problem with keywords having a long string value
   ! -------------------------------------------------------------
   !
   ! --------------------------- from include file (see fits_template.f90)
@@ -2589,17 +2588,16 @@ contains
     case (0) ! append or update
        if (kwd == 'CONTINUE') then
           call ftprec(unit, trim(card), status)
+          call ftplsw(unit, status)
        else
-          ! if long string, put LongStringWarning
-          if (index(card, "&'")>0) call ftplsw(unit, status)
           ! delete keyword in its current location (if any)
           call ftdkey(unit, kwd, status)
           status = 0
           ! append
-          call ftprec(unit, trim(cardfits), status)
+          call ftprec(unit, cardfits, status)
        endif
     case (1) ! append (for HISTORY and COMMENT)
-       call ftprec(unit, trim(cardfits), status)
+       call ftprec(unit, cardfits, status)
     case default
        write(unit=*,fmt=*)" Unexpected card format in fits header :"
        write(unit=*,fmt="(a80)") card

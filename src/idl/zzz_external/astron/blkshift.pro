@@ -87,7 +87,6 @@
 ;   Assume since V5.5, remove VMS support  W. Landsman  Sep 2006
 ;   Assume since V5.6, TRUNCATE_LUN available  W. Landsman Sep 2006
 ;   MacOS can point beyond EOF    W. Landsman   Aug 2009
-;   Use V6.0 notation  W. Landsman Aprl 2014
 ;
 ;-
 ; Copyright (C) 2000, 2002, Craig Markwardt
@@ -144,7 +143,7 @@ PRO BLKSHIFT, UNIT, POS0, DELTA0, NOZERO=NOZERO0, ERRMSG=ERRMSG, $
   if buffersize LE 0 then buffersize = 32768L
 
   ;; Seek to end of file and add zeroes (if needed)
-  pos_fin +=  1L
+  pos_fin = pos_fin + 1L
 
   ;; Unless /Nozero set, the zeroes will be explicitly written
   if (delta GT 0) && (nozero EQ 0) && (pos_fin+delta GT fs.size) then begin
@@ -155,7 +154,7 @@ PRO BLKSHIFT, UNIT, POS0, DELTA0, NOZERO=NOZERO0, ERRMSG=ERRMSG, $
           if n_elements(bb0) NE ntrans then bb0 = bytarr(ntrans)
           writeu, unit, bb0, transfer_count=cc
           if cc EQ 0 then goto, IO_FINISH
-          nleft -= cc
+          nleft = nleft - cc
       endwhile
   endif
 
@@ -173,7 +172,7 @@ PRO BLKSHIFT, UNIT, POS0, DELTA0, NOZERO=NOZERO0, ERRMSG=ERRMSG, $
           point_lun, unit, edat - ntrans + delta
           writeu, unit, bb0, transfer_count=cc
           if cc NE ntrans then goto, IO_FINISH
-          edat -= ntrans
+          edat = edat - ntrans
       endwhile
   endif else begin
 
@@ -188,7 +187,7 @@ PRO BLKSHIFT, UNIT, POS0, DELTA0, NOZERO=NOZERO0, ERRMSG=ERRMSG, $
           point_lun, unit, bdat - abs(delta)
           writeu, unit, bb0, transfer_count=cc
           if cc NE ntrans then goto, IO_FINISH
-          bdat += ntrans
+          bdat = bdat + ntrans
       endwhile
       if pos_fin EQ fs.size  then begin 
                   Truncate_Lun, unit
@@ -213,7 +212,7 @@ PRO BLKSHIFT, UNIT, POS0, DELTA0, NOZERO=NOZERO0, ERRMSG=ERRMSG, $
           if n_elements(bb0) NE i then bb0 = bytarr(i)
           writeu, unit, bb0, transfer_count=cc
           if cc EQ 0 then goto, IO_FINISH
-          nleft -= cc
+          nleft = nleft - cc
       endwhile
   endif
   point_lun, unit, pos_beg  ;; again, to be sure data is flushed

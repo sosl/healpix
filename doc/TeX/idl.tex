@@ -1,10 +1,18 @@
 % -*- LaTeX -*-
 
+% PLEASE USE THIS FILE AS A TEMPLATE FOR THE DOCUMENTATION OF YOUR OWN
+% FACILITIES: IN PARTICULAR, IT IS IMPORTANT TO NOTE COMMENTS MADE IN
+% THE TEXT AND TO FOLLOW THIS ORDERING. THE FORMAT FOLLOWS ONE USED BY
+% THE COBE-DMR PROJECT.	
+% A.J. Banday, April 1999.
+
 \documentclass[12pt,twoside]{article}
-\usepackage{xr-hyper,healpix,graphicx,html,makeidx} 
-%xr-hyper first to have correct Equation and Figure cross-referencing in html
-%putting hyperref first screws up references in html
-%
+% \usepackage{healrut,psfig,html,makeidx}
+%\usepackage{healpix,psfig,html,makeidx}
+%\usepackage{healpix,graphicx,html,makeidx}
+\usepackage{healpix,graphicx,xr-hyper,html,makeidx}
+%\usepackage{hyperref,healpix,graphicx,html,makeidx}%putting hyperref first
+%screws up references in html
 %\externaldocument{install}
 %%%%%% ----- HTML only commands -------
 \begin{htmlonly}
@@ -40,22 +48,10 @@
 \newcommand{\mytargetb}[2]{% \mytargett{link_id}{target_txt}
 \latexhtml{\hbox{{#2}\hypertarget{#1}{}}}{\label{#1}{#2}}}
 
-% to be able to use \renewcommand later on:
 \newcommand{\facname}{}
 \newcommand{\FACNAME}{}
-\newcommand{\projfullname}{}
 %\renewcommand{\contentsname}{{TABLE OF CONTENTS\\\rule{\hsize}{0.7mm}\\}}
 
-
-% CROSS-LINK
-%%%%http://tex.stackexchange.com/questions/41539/does-hyperref-work-between-two-files
-%% add xr-hyper (part of hyperref) to used packages, *BEFORE* hyperref (or html)
-\externaldocument{facilities}
-\begin{htmlonly}
-\externallabels{.}{/tmp/facilitieslabels.pl}
-\end{htmlonly}
-
-%%%%
 \sloppy
 \setcounter{secnumdepth}{0}
 \setcounter{tocdepth}{2} % 1: sections only in TOC, 2:sections+subsections, ...
@@ -99,88 +95,51 @@ IDL directory tree to your {\tt IDL\_PATH}. In order to utilise
 this feature, the user should invoke IDL using the
 commands {\tt hidl} or {\tt hidlde} which are aliases defined in the
 \healpix profile created during the installation process 
-for the package (see \linklatexhtml{the Installation Document}{install.pdf}{install.html}).
+for the package.
 
 \subsection{Using \healpix IDL together with other IDL libraries}
 Many users want to use \healpix IDL routines at the same time as other (home made
-or third party) IDL routines. There are several ways to achieve this:\\
-%
-{\em -- with {\tt hidl}:}\\
-before starting {\tt hidl} or {\tt hidlde}, (re)define the environment variable {\tt \$IDL\_PATH} so that it looks like:
+or third party) IDL routines. There are several ways to achieve this.
+
+Before starting {\tt hidl} or {\tt hidlde}, (re)define the environment variable {\tt \$IDL\_PATH} so that it looks like:
 ``{\tt +}{\it /path/to/my/idl/routines}{\tt :+}{\it /path/to/other/idl/routines}:{\tt
 <IDL\_DEFAULT>}''
 (where {\tt
 <IDL\_DEFAULT>} should be typed literally and the {\tt +}{\it /path} means that
 subdirectories of {\em path} will be searched recursively). For example, if
 young Albert types in Bourne shell:\\
-{\tt export IDL\_PATH=}``{\tt +/home/aeinstein/brownian:<IDL\_DEFAULT>}''\\
+{\tt export IDL\_PATH=``+/home/aeinstein/brownian:<IDL\_DEFAULT>''}\\
 {\tt hidl}\\
-he will start an IDL session in which the \healpix IDL routines are accessible, followed by all those located
-in subdirectories of {\tt /home/aeinstein/brownian}, followed by the standard
-IDL routines. If {\tt .pro} files of the same name are avaible at the different locations, the first
-one encountered will prevail;\\
-%
-{\em -- without {\tt hidl}:}\\
-before starting IDL, the environment variables {\tt \$IDL\_PATH} and {\tt
-\$IDL\_STARTUP} must be defined. For instance, to emulate under ({\tt ba}){\tt
-sh} the behavior of {\tt hidl} shown above, the same (bolder) Albert will type:\\
-{\tt export IDL\_PATH=}``{\tt +\$\{HEALPIX\}/src/idl:+/home/aeinstein/brownian:<IDL\_DEFAULT>}''\\
-{\tt export IDL\_STARTUP=}``{\tt +\$\{HEALPIX\}/src/idl/HEALPix\_startup}''\\
-{\tt idl}
-
-
-
+he will start an IDL session in which \healpix IDL routines and all those located
+in subdirectories of {\tt /home/aeinstein/brownian} are accessible.
 
 \subsection{Using GDL instead of IDL}
 See \linklatexhtml{the Installation Document}{install.pdf}{install.html} for more information on this issue.
 
 %%%%%%
-\newpage
 %%%%\include{startup_idl}
 \input startup_idl
 %%%%%%%
-\newpage
 
 \section{Changes between releases 3.11 and \hpxversion}
 
 \begin{itemize}
-%
-\item addition of \htmlref{{\tt ialteralm}}{{idl:ialteralm}} to modify Spherical
-Harmonics coefficients ($a_{lm}$).
-%
-\item addition of \htmlref{{\tt planck\_colors}}{{idl:planck_colors}} to modify
-current color table to one used in Planck 2013 publications.
-%
+\item addition of \htmlref{{\tt ialteralm}}{{idl:ialteralm}}
+
 \item \htmlref{{\tt cartview, gnomview, mollview,
-orthview}}{idl:mollview}: 
-\begin{itemize} 
-\item addition of  
+orthview}}{idl:mollview}: addition of  
 \mylink{idl:mollview:bad_color}{{\tt BAD\_COLOR}},
 \mylink{idl:mollview:bg_color}{{\tt BG\_COLOR}} and
 \mylink{idl:mollview:fg_color}{{\tt FG\_COLOR}} keywords to change the color of the
 missing pixels, background and foreground labels and lines.
-\item support for 
-\mylink{idl:mollview:colt}{{\tt COLT='planck1'}} and 
-\mylink{idl:mollview:colt}{{\tt COLT='planck2'}} to use the Planck color tables
-defined in \htmlref{{\tt planck\_colors}}{{idl:planck_colors}}
-\end{itemize}
-%
-\item Bugs correction in 
-\mylink{idl:bin_llcl}{{\tt bin\_llcl}},
-\mylink{idl:query_disc}{{\tt query\_disc}}.
-%
-\item update of the required
-    \htmladdnormallink{{\tt IDL-astron} library}{http://idlastro.gsfc.nasa.gov/homepage.html}
-    routines, and their supporting \htmladdnormallink{\tt Coyote}{http://www.idlcoyote.com}
-    routines (2014-11-10).
-%
+
 \end{itemize}
 
 \section{Changes between releases 3.00 and 3.11}
 %Several routines have been added or improved since version 3.00, as listed below.
 
 \begin{itemize}
-%
+
 \item Latest edition (version 3.11)
 \begin{itemize}
 	\item %
@@ -188,20 +147,21 @@ defined in \htmlref{{\tt planck\_colors}}{{idl:planck_colors}}
 		\htmlref{{\tt pix2ang\_nest}}{{idl:pix_tools}} routines
 		now accept scalar arguments
 \end{itemize}
-%
+
+
 \item Previous edition (version 3.10)
 \begin{itemize}
 	\item bug corrections: 
 	\htmlref{{\tt query\_disc}}{{idl:query_disc}}: correct handling of empty disc; 
 	\htmlref{{\tt bin\_llcl}}{{idl:bin_llcl}}: correct handling of optional argument.
-%
+
 	\item double precision of input now preserved in
 	\htmlref{{\tt gaussbeam}}{{idl:gaussbeam}} and 
 	\htmlref{{\tt euler\_matrix\_new}}{{idl:euler_matrix_new}}.
-%
+
 	\item \htmlref{{\tt fits2cl}}{idl:fits2cl}: addition of \mylink{idl:fits2cl:planck1}{{\tt /PLANCK1}} keyword
 to read best fit $C(l)$ model to Planck 2013 + external data.
-%
+
 	\item it is now possible to read a specific FITS file extension identified by its
 	(0-based) number or its case-insensitive EXTNAME value with the {\tt Extension}
 	keyword added to 
@@ -210,7 +170,7 @@ to read best fit $C(l)$ model to Planck 2013 + external data.
 	\htmlref{{\tt read\_fits\_map}}{{idl:read_fits_map}},
 	\htmlref{{\tt read\_fits\_s}}{{idl:read_fits_s}} and 
 	\htmlref{{\tt read\_tqu}}{{idl:read_tqu}}.
-%
+
 	\item update of the required
 	\htmladdnormallink{{\tt IDL-astron} library}{http://idlastro.gsfc.nasa.gov/homepage.html}
 	routines, and their supporting \htmladdnormallink{\tt Coyote}{http://www.idlcoyote.com}
@@ -630,7 +590,6 @@ file containing $a_{lm}$ coefficients.
 \include{orthcursor_idl}
 \include{orthview_idl}
 \include{pix_tools_idl}
-\include{planck_colors_idl}
 \include{query_disc_idl}
 \include{query_polygon_idl}
 \include{query_strip_idl}

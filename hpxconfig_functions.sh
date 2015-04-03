@@ -85,8 +85,8 @@ echoLn () {
 }
 #-------------
 findFITSLib () {
-    for dir in $* /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 /usr/local/lib/cfitsio /usr/local/lib64/cftisio /usr/local/src/cfitsio ${HOME}/lib ${HOME}/lib64 ./src/cxx/${HEALPIX_TARGET}/lib/ /softs/cfitsio/3.3*/lib /softs/cfitsio/3.2*/lib /usr/common/usg/cfitsio/3.3*/lib ; do
-	if [ -r "${dir}/lib${LIBFITS}.a" -o -r "${dir}/lib${LIBFITS}.so" -o -r "${dir}/lib${LIBFITS}.dylib" ] ; then
+    for dir in $* /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 /usr/local/lib/cfitsio /usr/local/lib64/cftisio /usr/local/src/cfitsio ${HOME}/lib ${HOME}/lib64 ./src/cxx/${HEALPIX_TARGET}/lib/ /softs/cfitsio/3.24/lib ; do
+	if [ -r "${dir}/lib${LIBFITS}.a" -o -r "${dir}/lib${LIBFITS}.so" ] ; then
 	    FITSDIR=$dir
 	    break
 	fi	    
@@ -94,7 +94,7 @@ findFITSLib () {
 }
 #-------------
 findFITSInclude () {
-    for dir in $* /usr/include /usr/local/include /usr/local/src/cfitsio ${HOME}/include ${HOME}/include64 ./src/cxx/${HEALPIX_TARGET}/include/ /softs/cfitsio/3.24/include /usr/common/usg/cfitsio/3.26/include ; do
+    for dir in $* /usr/include /usr/local/include /usr/local/src/cfitsio ${HOME}/include ${HOME}/include64 ./src/cxx/${HEALPIX_TARGET}/include/ /softs/cfitsio/3.24/include ; do
 	if [ -r "${dir}/fitsio.h" ] ; then
 	    FITSINC=$dir
 	    break
@@ -103,7 +103,7 @@ findFITSInclude () {
 }
 #-------------
 findFITSPrefix () {
-    for dir in $* /usr /usr/local /usr/local/lib/cfitsio /usr/local/cfitsio /usr/local/lib64/cftisio /usr/local/src/cfitsio ${HOME}/softs/cfitsio/3.24 /usr/common/usg/cfitsio/3.26 ; do
+    for dir in $* /usr /usr/local /usr/local/lib/cfitsio /usr/local/cfitsio /usr/local/lib64/cftisio /usr/local/src/cfitsio ${HOME}/softs/cfitsio/3.24 ; do
 	testlib="${dir}/lib/lib${LIBFITS}"
 	if ( ([ -r "${testlib}.a" ] || [ -r "${testlib}.so" ] || [ -r "${testlib}.dylib" ]) && [ -r "${dir}/include/fitsio.h" ] ) ; then
 	    FITSPREFIX=$dir
@@ -158,12 +158,6 @@ crashAndBurn () {
 #=====================================
 #=========== C pakage ===========
 #=====================================
-# setCDefaults
-# add64bitCFlags
-# askCUserMisc
-# editCMakefile
-# writeCpkgconfigFile
-# C_config
 
 setCDefaults () {
 
@@ -192,7 +186,7 @@ setCDefaults () {
 
     FITSINC="/usr/local/include"
 
-    DO_C_SHARED=0
+    DOSHARED=0
 }
 # -------------
 add64bitCFlags () {
@@ -225,56 +219,49 @@ askCUserMisc () {
     echoLn "enter archive creation (and indexing) command ($C_AR): "
     read answer
     [ "x$answer" != "x" ] && C_AR=$answer
-
-    echoLn "do you want the HEALPix/C library to include CFITSIO-related functions ? (Y|n): "
+    
+    echoLn "enter full name of cfitsio library (lib${LIBFITS}.a): "
     read answer
-    if [ "x$answer" == "x" -o "x$answer" == "xY" -o "x$answer" == "xy" -o "x$answer" == "x1" ]; then
-	C_WITHOUT_CFITSIO=0
-	echoLn "enter full name of cfitsio library (lib${LIBFITS}.a): "
-	read answer
-	[ "x$answer" != "x" ] && LIBFITS=`${BASENAME} $answer ".a" | ${SED} "s/^lib//"`
+    [ "x$answer" != "x" ] && LIBFITS=`${BASENAME} $answer ".a" | ${SED} "s/^lib//"`
 
-	findFITSLib $LIBDIR $FITSDIR
-	echoLn "enter location of cfitsio library ($FITSDIR): "
-	read answer
-	[ "x$answer" != "x" ] && FITSDIR=$answer
-	fullPath FITSDIR
+    findFITSLib $LIBDIR $FITSDIR
+    echoLn "enter location of cfitsio library ($FITSDIR): "
+    read answer
+    [ "x$answer" != "x" ] && FITSDIR=$answer
+    fullPath FITSDIR
 
-	[ "x$WLRPATH" != "x" ] && WLRPATH="${WLRPATH}${FITSDIR}"
+    [ "x$WLRPATH" != "x" ] && WLRPATH="${WLRPATH}${FITSDIR}"
 
-	lib="${FITSDIR}/lib${LIBFITS}.a"
-	if [ ! -r $lib ]; then
-	    echo "error: fits library $lib not found"
-	    crashAndBurn
-	fi
-	guess1=${FITSDIR}
-	guess2=`${DIRNAME} ${guess1}`
-	guess3="${guess2}/include"
+    lib="${FITSDIR}/lib${LIBFITS}.a"
+    if [ ! -r $lib ]; then
+	echo "error: fits library $lib not found"
+	crashAndBurn
+    fi
+    guess1=${FITSDIR}
+    guess2=`${DIRNAME} ${guess1}`
+    guess3="${guess2}/include"
 
-	findFITSInclude $INCDIR ${guess1} ${guess2} ${guess3} $FITSINC
-	echoLn "enter location of cfitsio header fitsio.h ($FITSINC): "
-	read answer
-	[ "x$answer" != "x" ] && FITSINC=$answer
-	fullPath FITSINC
+    findFITSInclude $INCDIR ${guess1} ${guess2} ${guess3} $FITSINC
+    echoLn "enter location of cfitsio header fitsio.h ($FITSINC): "
+    read answer
+    [ "x$answer" != "x" ] && FITSINC=$answer
+    fullPath FITSINC
 
-	inc="${FITSINC}/fitsio.h"
-	if [ ! -r $inc ]; then
-	    echo "error: cfitsio include file $inc not found"
-	    crashAndBurn
-	fi
-    else
-	C_WITHOUT_CFITSIO=1
+    inc="${FITSINC}/fitsio.h"
+    if [ ! -r $inc ]; then
+	echo "error: cfitsio include file $inc not found"
+	crashAndBurn
     fi
 
-    echoLn "A static library is produced by default. Do you also want a shared library ? "
-    if [ ${DO_C_SHARED} -eq 1 ]; then
+    echoLn "A static library is produced by default. Do you also want a shared library ?"
+    if [ $DOSHARED -eq 1 ]; then
 	echoLn "(Y|n) "
 	read answer
-	[ "x$answer" = "xn" -o "x$answer" = "xN" ] && DO_C_SHARED=0
+	[ "x$answer" = "xn" -o "x$answer" = "xN" ] && DOSHARED=0
     else
 	echoLn "(y|N) "
 	read answer
-	[ "x$answer" = "xy" -o "x$answer" = "xY" ] && DO_C_SHARED=1
+	[ "x$answer" = "xy" -o "x$answer" = "xY" ] && DOSHARED=1
     fi
 }
 #-------------
@@ -283,7 +270,7 @@ editCMakefile () {
     echoLn "Editing top Makefile  for C ..."
 
     clibtypes='c-static'
-    if [ ${DO_C_SHARED} -eq 1 ]; then
+    if [ $DOSHARED -eq 1 ]; then
 	if [ "${OS}" = "Darwin" ]; then
 	    clibtypes="${clibtypes} c-dynamic"
 	else
@@ -302,7 +289,6 @@ editCMakefile () {
 	${SED} "s|^C_INCDIR.*$|C_INCDIR      = $INCDIR|"   |\
 	${SED} "s|^C_LIBDIR.*$|C_LIBDIR      = $LIBDIR|"   |\
 	${SED} "s|^C_AR.*$|C_AR        = $C_AR|"   |\
-	${SED} "s|^C_WITHOUT_CFITSIO.*$|C_WITHOUT_CFITSIO = $C_WITHOUT_CFITSIO|" |\
 	${SED} "s|^C_CFITSIO_INCDIR.*$|C_CFITSIO_INCDIR = $FITSINC|" |\
 	${SED} "s|^C_CFITSIO_LIBDIR.*$|C_CFITSIO_LIBDIR = $FITSDIR|" |\
 	${SED} "s|^C_WLRPATH.*$|C_WLRPATH = $WLRPATH|" |\
@@ -317,34 +303,6 @@ editCMakefile () {
     edited_makefile=1
 
 }
-# -----------------------------------------------------------------
-writeCpkgconfigFile (){
-    pkgconfigFile=${HEALPIX}/lib/chealpix.pc
-    echo
-    echo "Writing pkgconfig file: ${pkgconfigFile}"
-
-    echo "# HEALPix/C pkg-config file"         > ${pkgconfigFile}
-    echo " "                                   >> ${pkgconfigFile}
-    echo "prefix=${HEALPIX}"                   >> ${pkgconfigFile}
-    echo "libdir=\${prefix}/lib"               >> ${pkgconfigFile}
-    echo "includedir=\${prefix}/include"       >> ${pkgconfigFile}
-    echo " "                                   >> ${pkgconfigFile}
-    echo "Name: chealpix"                      >> ${pkgconfigFile}
-    echo "Description: C library for HEALPix (Hierarchical Equal-Area iso-Latitude) pixelisation of the sphere" >> ${pkgconfigFile}
-    echo "Version: ${HPX_VERSION}"             >> ${pkgconfigFile}
-    echo "URL: http://healpix.sourceforge.net" >> ${pkgconfigFile}
-    if [ ${C_WITHOUT_CFITSIO} -eq 0 ] ; then
-	echo "Requires: cfitsio"               >> ${pkgconfigFile}
-    fi
-    echo "Libs: -L\${libdir} -lchealpix"       >> ${pkgconfigFile}
-    echo "Cflags: -I\${includedir} ${PIC}"     >> ${pkgconfigFile}
-
-    ${CAT} ${pkgconfigFile}
-    echo "           -------------- "
-    echo
-
-}
-
 #-------------
 C_config () {
 
@@ -353,7 +311,6 @@ C_config () {
 #    makeCInstall
     editCMakefile
     [ $NOPROFILEYET = 1 ] && installProfile
-    writeCpkgconfigFile
 
 }
 
@@ -394,7 +351,7 @@ pickCppCompilation() {
 	    ii=$((ii+1))
 	done
 	echo "will compile with ${target} configuration"
-	HEALPIX_TARGET=${target} ; export HEALPIX_TARGET
+	export HEALPIX_TARGET=${target}
 	target_chosen=1
 	cd $HEALPIX
     fi
@@ -557,8 +514,6 @@ Healpy_config () {  # for healpy 1.7.0
     PYTHON='python'
     tmpfile=to_be_removed
     HPY_SETUP='setup.py' # default setup
-    HPY_SETUP2='setup2.py' # backup setup
-    HPY_DIR='src/healpy/'
 
     # ask for python command
     echoLn "Enter python command [$PYTHON] "
@@ -580,6 +535,7 @@ Healpy_config () {  # for healpy 1.7.0
     fi
 
     # special treatement for MacOSX
+    HPY_SETUP2='setup2.py' # backup setup
     if [ "${OS}" = "Darwin" ]; then
 	# find out compiler and options used by python (and therefore healpy in setup.py)
 	HPY_CC=`${PYTHON}   -c "from distutils.sysconfig import get_config_var ; print get_config_var('CC')"`
@@ -591,11 +547,8 @@ int main(){
 }
 EOF
 	${HPY_CC} -E ${HPY_OPTS} ${tmpfile}.c -o ${tmpfile}.p  1>${DEVNULL} 2>&1
-	# if test fails, create back up setup2.py and make sure it will be used
+	# if test fails, use back up setup.py
 	if [ ! -e ${tmpfile}.p ] ; then
-	    cat ${HPY_DIR}${HPY_SETUP} | \
-		sed "s|'--disable-shared',|'--disable-shared', '--disable-dependency-tracking',|g" > \
-		${HPY_DIR}${HPY_SETUP2}
 	    HPY_SETUP=${HPY_SETUP2}
 	fi
 	# clean up
@@ -645,7 +598,7 @@ askPS () {
 
     echo
     echo  "Please indicate the Postscript previewer you want to use "
-    echo  " (eg: gs, ghostview, gv, ggv, kghostview, evince)"
+    echo  " (eg: gs, ghostview, gv, ggv, kghostview)"
     echoLn "Enter choice [$ps_com]        "
     read answer
     [ "x$answer" != "x" ] && ps_com="$answer"
@@ -662,17 +615,6 @@ askPS () {
     else
 	ps_scom=$ps_com
     fi
-}
-#-------------
-askPDF () {
-
-    echo
-    echo  "Please indicate the PDF previewer you want to use "
-    echo  " (eg: gv, xpdf, kpdf, open)"
-    echoLn "Enter choice [$pdf_com]        "
-    read answer
-    [ "x$answer" != "x" ] && pdf_com="$answer"
-    pdf_scom=$pdf_com
 }
 #-------------
 askGif () {
@@ -710,8 +652,6 @@ papersize = '$papersize'
 media = '$media'
 ps_com = '$ps_com'
 ps_scom = '$ps_scom'
-pdf_com = '$pdf_com'
-pdf_scom = '$pdf_scom'
 gif_com  = '$gif_com'
 gif_scom = '$gif_scom'
 settings = 'user'
@@ -789,7 +729,6 @@ setIdlDefaults () {
     gif_com="netscape"
     [ "${OS}" = "Linux" ]   && gif_com="display"
     [ "${OS}" = "Darwin" ]  && gif_com="open"
-    [ "${OS}" = "Darwin" ]  && pdf_com="open"
     previewfile=$HEALPIX/src/idl/visu/idl_default_previewer.pro
    
 #     # if IDL_PATH is undefined, then set it to +IDL_DIR
@@ -811,7 +750,6 @@ idl_config () {
     askPaperSize
     askPS
     askGif
-    askPDF
     generateProIdlFile
     generateConfIdlFile
     [ $NOPROFILEYET = 1 ] && installProfile
@@ -827,7 +765,6 @@ idl_config () {
 #   checkF90Fitsio: check that CFITSIO library contains Fortran wrapper
 #   checkF90FitsioLink: check that CFITSIO library links to Fortran test code
 #   checkF90FitsioVersion: check that CFITSIO library is recent enough
-#   checkCParall: check that C compiler supports OpenMP
 #   GuessF90Compiler: tries to guess compiler from operating system
 #####   askFFT: ask user for his choice of fft, find fftw library
 #   askOpenMP: ask user for compilation of OpenMP source files
@@ -850,8 +787,6 @@ idl_config () {
 #   editF90Makefile: create makefile from template
 #   generateConfF90File: generates configuration file for F90
 #   offerF90Compilation: propose to perform F90 compilation
-#   f90_shared: deal with shared F90 library
-#   writeF90pkgconfigFile: writes pkg-config (.pc) file for F90 library
 #   f90_config: top routine for F90
 #
 #-------------
@@ -910,13 +845,12 @@ setF90Defaults () {
 
 sun_modules () {
 tmpfile=to_be_removed
-suffix=.f90
-${CAT} > ${tmpfile}${suffix} << EOF
+${CAT} > ${tmpfile}.f90 << EOF
    module ${tmpfile}
        integer :: i
    end module ${tmpfile}
 EOF
-   $FC -c ${tmpfile}${suffix} -o ${tmpfile}.o
+   $FC -c ${tmpfile}.f90 -o ${tmpfile}.o
 
    if test -s ${tmpfile}.M  ; then
        MOD="M"
@@ -930,13 +864,12 @@ EOF
 # -----------------------------------------------------------------
 ifc_modules () {
 tmpfile=to_be_removed
-suffix=.f90
-${CAT} > ${tmpfile}${suffix} << EOF
+${CAT} > ${tmpfile}.f90 << EOF
    module ${tmpfile}
        integer :: i
    end module ${tmpfile}
 EOF
-   $FC -c ${tmpfile}${suffix} -o ${tmpfile}.o 2> ${DEVNULL}
+   $FC -c ${tmpfile}.f90 -o ${tmpfile}.o 2> ${DEVNULL}
 
    if test -s ${tmpfile}.d  ; then
     # version 5 and 6 of ifc
@@ -982,16 +915,15 @@ checkF90FitsioLink () {
 # check that F90 routines can link with F90-fitsio wrappers
 # requires compilation of F90 code
     tmpfile=to_be_removed
-    suffix=.f90
     # write simple program to link with fitsio
-cat > ${tmpfile}${suffix} << EOF
+cat > ${tmpfile}.f90 << EOF
     program needs_fitsio
 	character(len=6) :: string='abcdef'
 	call ftupch(string)
     end program needs_fitsio
 EOF
     # compile and link
-    ${FC} ${FFLAGS}  ${tmpfile}${suffix} -o ${tmpfile}.x -L${FITSDIR} -l${LIBFITS} #${WLRPATH}
+    ${FC} ${FFLAGS}  ${tmpfile}.f90 -o ${tmpfile}.x -L${FITSDIR} -l${LIBFITS} #${WLRPATH}
 
     # test
     if [ ! -s ${tmpfile}.x ]; then
@@ -1014,9 +946,8 @@ checkF90FitsioVersion () {
 # check that FITSIO version is recent enough
 # requires compilation of F90 code
     tmpfile=./to_be_removed # do not forget ./ to allow execution
-    suffix=.f90
     # write simple test program
-cat > ${tmpfile}${suffix} << EOF
+cat > ${tmpfile}.f90 << EOF
     program date_fitsio
 	real:: version
 	call ftvers(version)
@@ -1024,12 +955,12 @@ cat > ${tmpfile}${suffix} << EOF
     end program date_fitsio
 EOF
     # compile and link
-    ${FC} ${FFLAGS}  ${tmpfile}${suffix} -o ${tmpfile}.x -L${FITSDIR} -l${LIBFITS} ${WLRPATH_}
+    ${FC} ${FFLAGS}  ${tmpfile}.f90 -o ${tmpfile}.x -L${FITSDIR} -l${LIBFITS} ${WLRPATH_}
 
-    CFITSIOVREQ="3.14"            # required  version of CFITSIO
     # run if executable
     if [ -x ${tmpfile}.x ]; then
 	CFITSIOVERSION=`${tmpfile}.x` # available version of CFITSIO 
+	CFITSIOVREQ="3.14"            # required  version of CFITSIO
 	v1=`echo ${CFITSIOVERSION} | ${AWK} '{print $1*1000}'` # multiply by 1000 to get integer
 	v2=`echo ${CFITSIOVREQ}    | ${AWK} '{print $1*1000}'`
 	${RM} ${tmpfile}.*
@@ -1198,36 +1129,27 @@ patchF90 (){
 
 # C compiler: 
 #  *  add -fno-tree-fre for GCC 4.4* versions (adapted from autoconf)
-#  *  add -fno-tree-fre for GCC 4.3.4 version (detected at NERSC)
     GCCVERSION="`$CC -dumpversion 2>&1`"
     gcc44=`echo $GCCVERSION | grep -c '^4\.4'`
+
     if test $gcc44 -gt 0; then
 	CFLAGS="$CFLAGS -fno-tree-fre"
     fi
-
-
-    GCCLONGVERSION="`$CC --version 2>&1`"
-    gcc434=`echo $GCCLONGVERSION | grep -c '4\.3\.4'`
-    if test $gcc434 -gt 0; then
-	CFLAGS="$CFLAGS -fno-tree-fre"
-    fi
-
 }
 # -----------------------------------------------------------------
 
 countUnderScore () {
 tmpfile=to_be_removed
-suffix=.f90
-${CAT} > ${tmpfile}${suffix} << EOF
+${CAT} > ${tmpfile}.f90 << EOF
     subroutine sub1()
       return
     end subroutine sub1
 EOF
  case $FTYPE in
   xlf)
-    $FC -qsuffix=f=f90 -c ${tmpfile}${suffix} -o ${tmpfile}.o  > ${DEVNULL} 2>&1 ;;
+    $FC -qsuffix=f=f90 -c ${tmpfile}.f90 -o ${tmpfile}.o  2>&1 ${DEVNULL} ;;
   *)
-    $FC -c ${tmpfile}${suffix} -o ${tmpfile}.o  > ${DEVNULL} 2>&1 ;;
+    $FC -c ${tmpfile}.f90 -o ${tmpfile}.o  2>&1 ${DEVNULL} ;;
  esac
 
     stwo=`${NM} ${tmpfile}.o | ${GREP} sub1__ | ${WC} -l`
@@ -1270,98 +1192,22 @@ EOF
 
 }
 # -----------------------------------------------------------------
-checkCParall () {
-# check that C compiler actually support parallel (OpenMP) compilation
-tmpfile=to_be_removed
-suffix=.c
-
-${CAT} > ${tmpfile}${suffix} <<EOF
-#include <omp.h>
-#include <stdio.h>
-int main() {
-#pragma omp parallel
-printf("Hello from thread %d, nthreads %d\n", omp_get_thread_num(), omp_get_num_threads());
-}
-EOF
-
-${CC} ${PRCFLAGS} -c ${tmpfile}${suffix} -o ${tmpfile}.o  >  ${DEVNULL} 2>&1
-if [ ! -s ${tmpfile}.o ]; then
-    echo
-    echo "compiler "
-    echo "   ${CC} ${PRCFLAGS} "
-    echo "does not support OpenMP compilation !"
-    ${RM} ${tmpfile}.*
-    crashAndBurn
-fi
-${RM} ${tmpfile}.*
-
-}
-# -----------------------------------------------------------------
 IdentifyCParallCompiler () {
 # add OpenMP flag for C compiler (currently only gcc and icc)
 #    clang support to be added soon
-    nicc=`$CC -V 2>&1          | ${GREP} -i intel | ${WC} -l`
-    ngcc=`$CC --version 2>&1   | ${GREP} -i 'GCC' | ${WC} -l`
+    nicc=`$CC -V 2>&1 | ${GREP} -i intel    | ${WC} -l`
+    ngcc=`$CC --version 2>&1 | ${GREP} -i 'GCC' | ${WC} -l`
     nclang=`$CC --version 2>&1 | ${GREP}  'clang' | ${WC} -l`
-    npgc=`$CC -V 2>&1          | ${GREP} -i portland | ${WC} -l` # portland C
-    npath=`$CC -v 2>&1         | ${GREP} -i ekopath  | ${WC} -l` # pathscale EKOPath
     PRCFLAGS=""
     if [ $nicc != 0 ] ; then
 	PRCFLAGS='-openmp' # -openmp-report0
     elif [ $ngcc != 0 ] ; then
 	PRCFLAGS='-fopenmp'
-    elif [ $nclang != 0 ] ; then
-	PRCFLAGS='-fopenmp'
-    elif [ $npgc != 0 ] ; then
-	PRCFLAGS='-mp'
-    elif [ $npath != 0 ] ; then
-	PRCFLAGS='-mp'
     else
 	echo "$CC: Unknown C compiler"
 	echo "Enter flags for C compilation with OpenMP"
 	read answer
 	[ "x$answer" != "x" ] && PRCFLAGS="$answer"
-    fi
-    checkCParall
-}
-# -----------------------------------------------------------------
-ExtendCFLAGS () {
-tmp=$CFLAGS
-for i in $1 ; do
-    match=0
-    for j in $tmp ; do
-	[ "$i" = "$j" ] && match=1
-    done
-    [ "$match" = "0" ] && tmp="$tmp $i"
-done
-CFLAGS=$tmp
-}
-# -----------------------------------------------------------------
-
-IdentifyCCompiler () {
-    ngcc=`$CC --version 2>&1   | ${GREP} '(GCC)'     | ${WC} -l` # gcc
-    nicc=`$CC -V 2>&1          | ${GREP} -i intel    | ${WC} -l` # intel C compiler
-    nclang=`$CC --version 2>&1 | ${GREP} clang       | ${WC} -l` # clang
-    npgc=`$CC -V 2>&1          | ${GREP} -i portland | ${WC} -l` # portland C
-    npath=`$CC -v 2>&1         | ${GREP} -i ekopath  | ${WC} -l` # pathscale EKOPath
-    if [ $ngcc != 0 ] ; then
-	echo "$CC: GCC compiler"
-	ExtendCFLAGS "-O3 -std=c99"
-    elif [ $nicc != 0 ] ; then
-	echo "$CC: Intel C compiler"
-	ExtendCFLAGS "-O3 -std=c99"
-    elif [ $nclang != 0 ] ; then
-	echo "$CC: clang C compiler"
-	ExtendCFLAGS "-O3 -std=c99"
-    elif [ $npgc != 0 ] ; then
-	echo "$CC: Portland Group C compiler"
-	ExtendCFLAGS "-O3"
-    elif [ $npath != 0 ] ; then
-	echo "$CC: Pathscale EKOPath C compiler"
-	ExtendCFLAGS "-O3"
-    else
-	echo "$CC: unknown C compiler"
-	ExtendCFLAGS "-O"
     fi
 }
 # -----------------------------------------------------------------
@@ -1369,7 +1215,7 @@ IdentifyCCompiler () {
 IdentifyF90Compiler () {
 # For Linux and Darwin
 # Lahey and Fujitsu still have to be tested
-	DO_F90_SHARED=0 # do NOT know how to create a shared library
+	F90_SHARED=0 # do NOT know how to create a shared library
         nima=`$FC -V 2>&1 | ${GREP} -i imagine1 | ${WC} -l`
         nnag=`$FC -V 2>&1 | ${GREP} -i nagware  | ${WC} -l`
         nifc=`$FC -V 2>&1 | ${GREP} -i intel    | ${WC} -l`
@@ -1419,12 +1265,11 @@ IdentifyF90Compiler () {
 		CFLAGS="$CFLAGS -DINTEL_COMPILER" # to combine C and F90
 		MODDIR="-module " # output location of modules
 		[ $OS = "Linux" ] && WLRPATH="-Wl,-R"
-		DO_F90_SHARED=1
+		F90_SHARED=1
         elif [ $npgf != 0 ] ; then
                 FCNAME="Portland Group Compiler"
 		PRFLAGS="-mp" # Open MP enabled, to be tested
 		MODDIR="-module " # output location of modules
-		CFLAGS="$CFLAGS -DpgiFortran" # to combine C and F90
         elif [ $nlah != 0 ] ; then
                 FCNAME="Lahey/Fujitsu Compiler"
 #  		FFLAGS="$FFLAGS --nap --nchk --npca --ntrace --tpp --trap dio"
@@ -1475,7 +1320,7 @@ IdentifyF90Compiler () {
 		CC="gcc"
 		FI8FLAG="-i8" # change default INTEGER to 64 bits
 		MODDIR="-fmod=" # output location of modules
-		DO_F90_SHARED=1
+		F90_SHARED=1
 	elif [ $ngfortran != 0 ] ; then
 	        FCNAME="gfortran compiler"
 		FFLAGS="$FFLAGS -DGFORTRAN -fno-second-underscore"
@@ -1486,7 +1331,7 @@ IdentifyF90Compiler () {
 		FI8FLAG="-fdefault-integer-8" # change default INTEGER to 64 bits
 		[ $OS = "Linux" ] && WLRPATH="-Wl,-R"
 		MODDIR="-J" # output location of modules
-		DO_F90_SHARED=1
+		F90_SHARED=1
 	elif [ $npath != 0 ] ; then
 	        FCNAME="PathScale EKOPath compiler"
 		FFLAGS="$FFLAGS"
@@ -1524,32 +1369,25 @@ add64bitF90Flags () {
 }
 # -----------------------------------------------------------------
 countF90Bits () {
-    # count bits in F90 compilation
     tmpfile=to_be_removed
-    suffix=.f90
-    ${CAT} > ${tmpfile}${suffix} <<EOF
+${CAT} > ${tmpfile}.f90 <<EOF
 program test
 end program test
 EOF
-    ${FC} ${FFLAGS} ${tmpfile}${suffix} -o ${tmpfile} 1>${DEVNULL} 2>&1
-    f90_ok=0
-    [ -s ${tmpfile} ] && f90_ok=1
-    f90_64=`${FILE} ${tmpfile} | ${GREP} 64 | ${WC} -l`
-    ${RM}  ${tmpfile}*
+
+     $FC $FFLAGS ${tmpfile}.f90 -o ${tmpfile} 1>${DEVNULL} 2>&1
+     f90_64=`${FILE} ${tmpfile} | ${GREP} 64 | ${WC} -l`
+     ${RM}  ${tmpfile}*
 }
 # -----------------------------------------------------------------
 countCBits () {
-    # count bits in C compilation
     tmpfile=to_be_removed
-    suffix=.c
-    ${CAT} > ${tmpfile}${suffix} <<EOF
+${CAT} > ${tmpfile}.c <<EOF
 int main(){
 }
 EOF
 
-    $CC $CFLAGS ${tmpfile}${suffix} -o ${tmpfile} 1>${DEVNULL} 2>&1
-    c_ok=0
-    [ -s ${tmpfile} ] && c_ok=1
+    $CC $CFLAGS ${tmpfile}.c -o ${tmpfile} 1>${DEVNULL} 2>&1
     c_64=`${FILE} ${tmpfile} | ${GREP} 64 | ${WC} -l`
     ${RM}  ${tmpfile}*
 }
@@ -1558,15 +1396,14 @@ checkF90Compilation () {
     # check that F90 compiler actually works
     # requires compilation and execution of F90 code
     tmpfile=./to_be_removed
-    suffix=.f90
-    ${CAT} > ${tmpfile}${suffix} <<EOF
+${CAT} > ${tmpfile}.f90 <<EOF
 program test
     print*,'hello'
 end program test
 EOF
     canrun=0
     cancompile=0
-    $FC $FFLAGS ${tmpfile}${suffix} -o ${tmpfile}  1>${DEVNULL} 2>&1
+    $FC $FFLAGS ${tmpfile}.f90 -o ${tmpfile}  1>${DEVNULL} 2>&1
     [ -s ${tmpfile} ] && cancompile=1
     if [ -x ${tmpfile} ] ; then
 	canrun=`${tmpfile} | grep hello | ${WC} -l`
@@ -1600,16 +1437,16 @@ checkF90LongLong () {
     # check that F90 support 8 byte integers
     # requires compilation and execution of F90 code
     tmpfile=./to_be_removed
-    suffix=.f90
+
 
     # conduct real test
-    ${CAT} > ${tmpfile}${suffix} <<EOF
+${CAT} > ${tmpfile}.f90 <<EOF
 program test
     if (selected_int_kind(16) > selected_int_kind(9)) print*,'OK'
 end program test
 EOF
     longlong=0
-    $FC $FFLAGS ${tmpfile}${suffix} -o ${tmpfile}  1>${DEVNULL} 2>&1
+    $FC $FFLAGS ${tmpfile}.f90 -o ${tmpfile}  1>${DEVNULL} 2>&1
     if [ -x ${tmpfile} ] ; then
 	longlong=`${tmpfile} | grep OK | ${WC} -l`
     fi
@@ -1636,10 +1473,10 @@ showDefaultDirs () {
 }
 
 updateDirs () {
-    F90_BINDIR=${F90_BINDIR}${DIRSUFF}
-    F90_INCDIR=${F90_INCDIR}${DIRSUFF}
-    F90_LIBDIR=${F90_LIBDIR}${DIRSUFF}
-    F90_BUILDDIR=${F90_BUILDDIR}${DIRSUFF}
+    F90_BINDIR=${F90_BINDIR}$DIRSUFF
+    F90_INCDIR=${F90_INCDIR}$DIRSUFF
+    F90_LIBDIR=${F90_LIBDIR}$DIRSUFF
+    F90_BUILDDIR=${F90_BUILDDIR}$DIRSUFF
 }
 
 showActualDirs () {
@@ -1693,7 +1530,6 @@ askUserMisc () {
     echoLn "enter name of your C compiler ($CC): "
     read answer
     [ "x$answer" != "x" ] && CC="$answer"
-    IdentifyCCompiler
 
     echoLn "enter compilation/optimisation flags for C compiler ($CFLAGS): "
     read answer
@@ -1701,18 +1537,6 @@ askUserMisc () {
 
     countF90Bits
     countCBits
-    if [ ${f90_ok} -eq 0 -o ${c_ok} -eq 0 ] ; then
-	echo
-	echo "ERROR!:"
-	if [ ${f90_ok} -eq 0 ] ; then
-	    echo " F90 Compilation ($FC $FFLAGS) failed!"
-	fi
-	if [ ${c_ok} -eq 0 ] ; then
-	    echo " C Compilation ($CC $CFLAGS) failed!"
-	fi
-	echo "Check the availability of the compiler(s) and the options used."
-	crashAndBurn
-    fi
     if [ $c_64 != $f90_64 ] ; then
 	echo "Warning: "
 	if [ $f90_64 != 0 ] ; then
@@ -1830,7 +1654,6 @@ editF90Makefile () {
 	${SED} "s|^F90_OS.*$|F90_OS	= $OS|" |\
 	${SED} "s|^F90_I8FLAG.*$|F90_I8FLAG  = $FI8FLAG|" |\
 	${SED} "s|^F90_LIBSUFFIX.*$|F90_LIBSUFFIX = $F90_LIBSUFFIX|" |\
-	${SED} "s|^F90_FLAGNAMELIB.*$|F90_FLAGNAMELIB = $F90_FLAGNAMELIB|" |\
 	${SED} "s|^ALL\(.*\) f90-void\(.*\)|ALL\1 f90-all\2|" |\
 	${SED} "s|^TESTS\(.*\) f90-void\(.*\)|TESTS\1 f90-test\2|" |\
 	${SED} "s|^CLEAN\(.*\) f90-void\(.*\)|CLEAN\1 f90-clean\2|" |\
@@ -1904,69 +1727,6 @@ offerF90Compilation () {
 }
 
 # -----------------------------------------------------------------
-f90_shared () {
-    echo " "
-    echo " Experimental feature: "
-    echoLn "A static library is produced by default. Do you rather want a shared/dynamic library ?"
-    DO_F90_SHARED=0
-    if [ ${DO_F90_SHARED} -eq 1 ]; then
-	echoLn " (Y|n) "
-	read answer
-	[ "x$answer" = "xn" -o "x$answer" = "xN" ] && DO_F90_SHARED=0
-    else
-	echoLn " (y|N) "
-	read answer
-	[ "x$answer" = "xy" -o "x$answer" = "xY" ] && DO_F90_SHARED=1
-    fi
-
-    if [ ${DO_F90_SHARED} -eq 1 ]; then
-	case $OS in
-	    Darwin)
-		F90_AR="${FC} ${F90PIC} -dynamiclib -Wl,-undefined,dynamic_lookup -o "
-		F90_FLAGNAMELIB="" #"-Wl,-install_name,"
-		F90_LIBSUFFIX=".dylib";;
-	    Linux)
-		F90_AR="${FC} ${F90PIC} -shared -o "
-		F90_FLAGNAMELIB="-Wl,-soname,"
-		F90_LIBSUFFIX=".so";;
-	    *)
-		F90_AR="${FC} ${F90PIC} -shared -o "
-		F90_FLAGNAMELIB="-Wl,-soname,"
-		F90_LIBSUFFIX=".so";;
-	esac
-    fi
-}
-# -----------------------------------------------------------------
-writeF90pkgconfigFile (){
-    pkgconfigFile=${HEALPIX}/lib${DIRSUFF}/healpix.pc
-    echo
-    echo "Writing pkgconfig file: ${pkgconfigFile}"
-    ${CAT}<<EOF > ${pkgconfigFile}
-# HEALPix/F90 pkg-config file
-# compiled with ${FC}
-
-prefix=${HEALPIX}
-suffix=${DIRSUFF}
-exec_prefix=\${prefix}/bin\${suffix}
-libdir=\${prefix}/lib\${suffix}
-includedir=\${prefix}/include\${suffix}
-
-Name: HEALPix
-Description: F90 library for HEALPix (Hierarchical Equal-Area iso-Latitude) pixelisation of the sphere
-Version: ${HPX_VERSION}
-URL: http://healpix.sourceforge.net
-Requires: cfitsio >= ${CFITSIOVREQ}
-Libs: -L\${libdir} -lhealpix -lhpxgif
-Cflags: -I\${includedir} ${PRFLAGS} ${F90PIC} 
-
-EOF
-
-    ${CAT} ${pkgconfigFile}
-    echo "           -------------- "
-    echo
-
-}
-# -----------------------------------------------------------------
 
 f90_config () {
     HPX_CONF_F90=$1
@@ -1978,15 +1738,12 @@ f90_config () {
     askOpenMP
     askF90PIC
     patchF90
-    f90_shared
     #makeProfile
     generateConfF90File
     editF90Makefile
     [ $NOPROFILEYET = 1 ] && installProfile
-    writeF90pkgconfigFile
 #    offerF90Compilation
 }
-
 
 #=====================================
 #=========== Check Configuration ===========
@@ -1997,7 +1754,7 @@ checkConfFiles () {
     echo "__________________________________________________________________"
     for conffile in ${HPX_CONF_DIR}/*; do
 	echo "${conffile} : "
-	${CAT} ${conffile}
+	cat ${conffile}
 	echo
     done
     echo "__________________________________________________________________"
@@ -2116,7 +1873,7 @@ makeTopConf(){
 
     case $SHELL in
     sh|ksh|bash|zsh)
-	${CAT}<<EOF >| ${HPX_CONF_MAIN}
+	cat<<EOF >| ${HPX_CONF_MAIN}
 # configuration for Healpix $HPXVERSION
 HEALPIX=${HEALPIX} ; export HEALPIX 
 HPX_CONF_DIR=${HPX_CONF_DIR}
@@ -2127,7 +1884,7 @@ if [ -r ${HPX_CONF_C} ] ;   then . ${HPX_CONF_C} ;   fi
 EOF
     echo ' ' ;;
     csh|tcsh)
-	${CAT}<<EOF >| ${HPX_CONF_MAIN}
+	cat<<EOF >| ${HPX_CONF_MAIN}
 # configuration for Healpix $HPXVERSION
 setenv HEALPIX $HEALPIX
 setenv HPX_CONF_DIR ${HPX_CONF_DIR}

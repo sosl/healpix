@@ -25,7 +25,7 @@
 ;  For more information about HEALPix see http://healpix.sourceforge.net
 ;
 ; -----------------------------------------------------------------------------
-function rotate_coord, in_uvec, inco=in_coord, outco=out_coord, euler_matrix=eul_mat, stokes_parameters = stokes, help=help
+function rotate_coord, in_uvec, inco=in_coord, outco=out_coord, euler_matrix=eul_mat, stokes_parameters = stokes
 ;+
 ; NAME:
 ;   rotate_coord
@@ -41,36 +41,31 @@ function rotate_coord, in_uvec, inco=in_coord, outco=out_coord, euler_matrix=eul
 ;
 ;
 ; CALLING SEQUENCE:
-;    Result= rotate_coord(Vec, Euler_Matrix=, Help=, Inco=, Outco=, Stokes_parameters=)
+;    result= rotate_coord(vec, inco=, outco=, euler_matrix=, Stokes_parameters=)
 ;
 ; 
 ; INPUTS:
-;    Vec : a (N x 3) array of coordinates
+;    vec : a (N x 3) array of coordinates
 ;
 ;
 ; OPTIONAL INPUTS:
-;    Help:  if set, prints the documentation header and exits
-;
 ;    Euler_matrix : 3x3 matrix of the active rotation
-;      (see eg, Euler_matrix_new routine)
-;
-;    Inco : input coordinate system (must be used with Outco)
-;     'G' :     Galactic
-;     'E' :     Ecliptic
-;     'C','Q' : Celestial, aka eQuatorial
-;
-;    Outco : output coordinate system (must be used with Inco)
-;      one of 'G', 'E', 'C', 'Q'
 ;
 ;    Stokes_parameters : (N x 2) array, values of Stokes parameters Q
-;     and U at the location of the input vector vec.
-;     where Q measures the polarisation along or across the meridian, 
-;     and U the polarisation at 45deg of the meridian
-;     On output contain the value of Q and U resulting from the rotation
+;    and U at the location of the input vector vec.
+;    where Q measures the polarisation along or across the meridian, 
+;    and U the polarisation at 45deg of the meridian
+;    On output contain the value of Q and U resulting from the rotation
 ;      
+; KEYWORD PARAMETERS:
+;    Inco : input coordinate system
+;    outco : output coordinate system
+;    'G' :     Galactic
+;    'E' :     Ecliptic
+;    'C','Q' : Celestial, aka eQuatorial
 ;
 ; OUTPUTS:
-;    Result : a (N x 3) array of coordinates
+;    result : a (N x 3) array of coordinates
 ;
 ;
 ; OPTIONAL OUTPUTS:
@@ -99,20 +94,13 @@ function rotate_coord, in_uvec, inco=in_coord, outco=out_coord, euler_matrix=eul
 ;
 ;
 ; MODIFICATION HISTORY:
-;    ???: EH, creation
-;    2014-08-25: added Help keyword
+;
 ;-
 
-routine = 'rotate_coord'
-
-if keyword_set(help) then begin
-    doc_library,routine
-    return,-1
-endif
 
 if (n_params() ne 1) then begin
     message,'Invalid number of arguments',/noprefix,/infor
-    message,'result= '+routine+'(Vec, [Euler_Matrix=, HELP=, Inco=, Outco=, Stokes_parameters=])',/noprefix,/noname
+    message,'result= rotate_coord(vec, [inco=, outco=, euler_matrix=, Stokes_parameters=])',/noprefix,/noname
 
 endif
 

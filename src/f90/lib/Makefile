@@ -16,12 +16,6 @@ SD :=$(shell pwd)
 OBJ:=$(obj:%=$(OD)/%)
 LIB:=$(LIBDIR)/libhpxgif$(LIBSUFFIX)
 
-# add internal name of shared library
-ifneq ($(strip $(FLAGNAMELIB)),)
-NAMELIB = $(FLAGNAMELIB)$(notdir $(LIB))
-else
-NAMELIB = 
-endif
 
 # library creation
 .DEFAULT_GOAL := all
@@ -29,8 +23,8 @@ endif
 all: $(OD)_mkdir $(LIB)
 
 $(LIB): $(OBJ)
-	$(AR) $@ $(NAMELIB) $(OBJ)
-	@cp -p $@ $(LIBDIR)/libgif$(LIBSUFFIX)
+	$(AR)  $(LIB) $(OBJ)
+	@cp -p $(LIB) $(LIBDIR)/libgif$(LIBSUFFIX)
 	@for p in $(OD)/*.$(MOD); do \
 	cp $$p $(INCDIR)/; \
 	done

@@ -26,50 +26,46 @@
 ;
 ; -----------------------------------------------------------------------------
 ;============================================================
-pro planck_colors, option, get=get, help=help, show=show
+pro planck_colors, option, get=get, help=help
 ;+
 ; NAME:
 ;    Planck_colors
 ;
 ; PURPOSE:
-;    Creates Planck specific RGB color tables for CMB map or
+;    Creates Planck specific color tables for CMB map or
 ;    frequency sky maps
 ;
 ; CATEGORY:
-;    Data visualization
 ;
 ; CALLING SEQUENCE:
-;    Planck_colors, option, [GET=, HELP=, SHOW=]
+;    Planck_colors, option, GET=, HELP=
 ;
 ; INPUTS:
 ;    Option:   scalar integer in [1,2]
-;      1 creates the 'parchment' Blue-red color table suitable for maps
-;        dominated by Gaussian signal (eg, CMB)
-;      2 creates a Blue-red-white color table suitable for maps with 
-;        high dynamic signal (eg, Galactic foreground)
+;      1 creates 'parchment' color table for CMB
+;      2 color table for frequency map
 ;
-; KEYWORD PARAMETERS:
-;    HELP:
-;     if set, this documentation header is printed out and the routine exits
-;
-;    SHOW:
-;     if set, the chosen color table is shown in a new window
 ;
 ; OPTIONAL OUTPUTS:
 ;    GET: 
 ;     on ouput, contains the newly created RGB color table
 ;     in a [256, 3] array
 ;
-; EXAMPLES:
-;
-;   planck_colors, 1, /show ; defines and shows color table 1
-;
-;   mollview, cmb, col='-planck1'  ; applies reversed color table 1 to a CMB map
-;
-;   mollview, m217, col='planck2' ; applies color table 2 to a frequency map
+;    HELP:
+;     if set, this documentation header is printed out and the routine exits
 ;
 ; SIDE EFFECTS:
-;   modify current color table using TVLCT
+;
+; RESTRICTIONS:
+;
+; PROCEDURE:
+;
+; EXAMPLE:
+;   planck_colors, 1
+;   mollview, cmb, col=256
+;   planck_colors, 2
+;   mollview, m217, col=256
+;
 ;
 ; MODIFICATION HISTORY:
 ;     Adapted from S. Colombi create_colortable1.
@@ -78,8 +74,6 @@ pro planck_colors, option, get=get, help=help, show=show
 ;     the current color table
 ;
 ; v1.0: 2013-04-10, EH @ IAP
-; v1.1: 2014-05-14: updated documentation header
-; v1.2: 2014-05-16: added SHOW
 ;
 ; For more questions about the color tables, ask 
 ;   Stephane Colombi (colombiATiap.fr) for option 1
@@ -88,7 +82,7 @@ pro planck_colors, option, get=get, help=help, show=show
 ;============================================================
 
 routine = 'planck_colors'
-syntax = routine+', option [,GET=, HELP=, SHOW=]'
+syntax = routine+', option [,GET=, HELP=]'
 
 if keyword_set(help) then begin
     doc_library,routine
@@ -137,19 +131,11 @@ R = byte(interpol(Rtab, Itab, ii))
 G = byte(interpol(Gtab, Itab, ii))
 B = byte(interpol(Btab, Itab, ii))
 
-; implements new color table
+; implemente new color table
 tvlct, R, G, B
 
 ; put (R,G,B) in GET vector
 get = [[R], [G], [B]]
-
-; show color table
-if keyword_set(show) then begin
-    xsize= ncolors * 2	
-    ysize= 100
-    window, /free, xsize=xsize, ysize=ysize, title='Planck color table '+strtrim(option,2)
-    tvscl, lindgen(xsize) #  replicate(1,ysize)
-endif
 
 return
 end

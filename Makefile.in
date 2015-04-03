@@ -35,7 +35,6 @@ F90_AR      =
 F90_PPFLAGS =
 F90_I8FLAG  = 
 F90_LIBSUFFIX = 
-F90_FLAGNAMELIB =
 
 F90_PGFLAG  =
 F90_PGLIBS  =
@@ -49,7 +48,7 @@ F90_MKFLAGS	= FC="$(F90_FC)" FFLAGS="$(F90_FFLAGS)" LDFLAGS="$(F90_LDFLAGS)" \
 	CC="$(F90_CC)" CFLAGS="$(F90_CFLAGS)" MOD="$(F90_MOD)" MODDIR=$(F90_MODDIR) \
 	OS="$(F90_OS)" HEALPIX=$(HEALPIX) LIBSUFFIX="$(F90_LIBSUFFIX)"\
 	LIBDIR=$(F90_LIBDIR) INCDIR=$(F90_INCDIR) BINDIR=$(F90_BINDIR) BUILDDIR=$(F90_BUILDDIR) \
-	FFTSRC=$(F90_FFTSRC) ADDUS="$(F90_ADDUS)" PARALL="$(F90_PARALL)" AR="$(F90_AR)" FLAGNAMELIB="$(F90_FLAGNAMELIB)"\
+	FFTSRC=$(F90_FFTSRC) ADDUS="$(F90_ADDUS)" PARALL="$(F90_PARALL)" AR="$(F90_AR)" \
 	PPFLAGS="$(F90_PPFLAGS)" PGFLAG="$(F90_PGFLAG)" PGLIBS="$(F90_PGLIBS)" FI8FLAG="$(F90_I8FLAG)"
 
 
@@ -66,7 +65,6 @@ C_INCDIR =
 C_AR     = 
 #
 # Where you have the cfitsio installation
-C_WITHOUT_CFITSIO = 
 C_CFITSIO_INCDIR = 
 C_CFITSIO_LIBDIR = 
 C_WLRPATH = 
@@ -74,11 +72,8 @@ C_WLRPATH =
 # Libraries to install (static, shared, dynamic)
 C_ALL =
 
-C_MKFLAGS = CC="$(C_CC)" PIC="$(C_PIC)" OPT="$(C_OPT)" \
-	LIBDIR="$(C_LIBDIR)" INCDIR="$(C_INCDIR)" AR="$(C_AR)" \
-	WITHOUT_CFITSIO="$(C_WITHOUT_CFITSIO)" CFITSIO_INCDIR="$(C_CFITSIO_INCDIR)" \
-	CFITSIO_LIBDIR="$(C_CFITSIO_LIBDIR)" WLRPATH="$(C_WLRPATH)" \
-	RM="$(RM)" 
+C_MKFLAGS = CC="$(C_CC)" PIC="$(C_PIC)" OPT="$(C_OPT)" LIBDIR="$(C_LIBDIR)" INCDIR="$(C_INCDIR)" AR="$(C_AR)" \
+	CFITSIO_INCDIR="$(C_CFITSIO_INCDIR)" CFITSIO_LIBDIR="$(C_CFITSIO_LIBDIR)" RM="$(RM)" WLRPATH="$(C_WLRPATH)"
 
 # ------------------------------ variables for C++ --------------------------
 
@@ -113,10 +108,9 @@ distclean: $(DISTCLEAN)
 # ------------------------------- F90 rules ----------------------------
 
 
-f90-progs = map2gif anafast smoothing synfast ud_grade hotspot plmgen alteralm median_filter ngsims_full_sky process_mask
-f90-libs  = f90-libsharp f90-modules f90-libgif
+f90-prog	= map2gif anafast smoothing synfast ud_grade hotspot plmgen alteralm median_filter ngsims_full_sky process_mask
 
-f90-all: $(f90-libs) $(f90-progs)
+f90-all: f90-libsharp f90-modules f90-libgif $(f90-prog)
 
 # itemized list instead of loop to allow parallel compiling
 
@@ -131,38 +125,38 @@ f90-libgif: f90-modules
 	@cd src/f90/lib; $(MAKE) $(F90_MKFLAGS)
 
 # visualization code
-map2gif: $(f90-libs)
+map2gif: f90-libsharp f90-modules f90-libgif
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
 # processing codes
-anafast: $(f90-libs)
+anafast: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-smoothing: $(f90-libs)
+smoothing: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-synfast: $(f90-libs)
+synfast: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-ud_grade: $(f90-libs)
+ud_grade: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-hotspot: $(f90-libs)
+hotspot: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-plmgen: $(f90-libs)
+plmgen: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-alteralm: $(f90-libs)
+alteralm: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-median_filter: $(f90-libs)
+median_filter: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-ngsims_full_sky: $(f90-libs)
+ngsims_full_sky: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
-process_mask: $(f90-libs)
+process_mask: f90-libsharp f90-modules
 	@cd src/f90/$@; $(MAKE) $(F90_MKFLAGS)
 
 f90-test: f90-all
@@ -188,19 +182,19 @@ f90-test: f90-all
 	echo "success rate: `ls -1 test*fits | wc -l`/10"
 
 f90-clean:
-	for p in $(f90-progs) lib mod sharp; do \
+	for p in $(f90-prog) lib mod sharp; do \
 	$(RM) src/f90/$$p/*.o src/f90/$$p/*.$(F90_MOD) src/f90/$$p/lib*.a src/f90/$$p/*.pc src/f90/$$p/*.pcl src/f90/$$p/*.il ; \
 	done
 	$(RM) -r $(F90_BUILDDIR)
 
 f90-vclean: f90-clean
-	for p in $(f90-progs); do \
+	for p in $(f90-prog); do \
 	$(RM) $(F90_BINDIR)/$$p; \
 	done
 	$(RM) $(F90_BINDIR)/sky_ng_sim*
 	$(RM) $(F90_INCDIR)/*.$(F90_MOD)
 	$(RM) $(F90_INCDIR)/*.pc $(F90_INCDIR)/*.pcl
-	$(RM) $(F90_LIBDIR)/*.a $(F90_LIBDIR)/*$(F90_LIBSUFFIX) $(F90_LIBDIR)/*.pc
+	$(RM) $(F90_LIBDIR)/*.a $(F90_LIBDIR)/*$(F90_LIBSUFFIX)
 
 f90-tidy: f90-vclean
 	$(RM) Makefile.bak test/test*
@@ -300,6 +294,30 @@ healpy-clean:
 	@cd src/healpy ; \
 	python $(HPY_SETUP) clean --all ; \
 	cd ../..
+
+
+
+# # CFITSIO_EXT_LIB and _INC only are necessary when going thru a Makefile
+# healpy-all:
+# 	@cd src/healpy; \
+# 	export EXTERNAL_CFITSIO=yes ; \
+# 	export CFITSIO_EXT_PREFIX=$(CFITSIO_EXT_PREFIX) ; \
+# 	export CFITSIO_EXT_LIB="-L$(CFITSIO_EXT_PREFIX)/lib -lcfitsio" ; \
+# 	export CFITSIO_EXT_INC="-I$(CFITSIO_EXT_PREFIX)/include" ; \
+# 	python setup.py build ; \
+# 	python setup.py install --user ; \
+# 	cd ../..
+
+# healpy-test: healpy-all
+# 	@cd /tmp ; \
+# 	python -c "import pylab; import healpy; import numpy ; hpv=healpy.__version__ ; print '\n\n Welcome to Healpy %s! \n\n'%(hpv); healpy.mollview(numpy.arange(12),title='Healpy %s'%(hpv)); pylab.show()" ; \
+# 	cd $(HEALPIX)
+
+# healpy-clean:
+# 	@cd src/healpy ; \
+# 	export CFITSIO_EXT_PREFIX=$(CFITSIO_EXT_PREFIX) ; \
+# 	python setup.py clean --all ; \
+# 	cd ../..
 
 healpy-tidy: healpy-clean
 

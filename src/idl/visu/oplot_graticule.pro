@@ -78,7 +78,7 @@ pro oplot_graticule, graticule, eul_mat, projection=projection, mollweide=mollwe
 ;         changes with arbitrary rotation
 ;-
 
-identify_projection, projtype, projection=projection, mollweide=mollweide, gnomic=gnomic, cartesian=cartesian, orthographic=orthographic
+identify_projection, projtype, projection=projection, mollweide=mollweide, gnomic=gnomic, cartesian=cartesian
 
 if keyword_set(flip) then flipconv=1 else flipconv = -1  ; longitude increase leftward by default (astro convention)
 

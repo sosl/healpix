@@ -20,13 +20,13 @@ of a sphere. As suggested in the name, this pixelation produces a subdivision of
               Satellite missions to measure the cosmic microwave background (CMB)
               anisotropy -- NASA&#039;s 
 
-              <a href="http://map.gsfc.nasa.gov/">Wilkinson Microwave
+              <a href="http://map.gsfc.nasa.gov/" target="_top">Wilkinson Microwave
               Anisotropy Probe (WMAP)</a>,
 
               and currently 
               operating ESA&#039;s mission
 
-              <a href="http://www.cosmos.esa.int/web/planck">Planck</a>
+              <a href="http://www.rssd.esa.int/index.php?project=Planck" target="_top">Planck</a>
 
               -- have been producing multi-frequency data
               sets sufficient for the construction of full-sky maps of the
@@ -66,13 +66,14 @@ of a sphere. As suggested in the name, this pixelation produces a subdivision of
                   scaling for the non-iso-latitude sampling distributions
                   (examples of which are the
 
-                  <a href="http://lambda.gsfc.nasa.gov/product/cobe/skymap_info_new.cfm">
+                  <a href="http://space.gsfc.nasa.gov/astro/cobe/skymap_info.html"
+                     target="_top">
                     Quadrilateralized Spherical Cube
                   </a>
 
                   used for the NASA&#039;s
 
-                  <a href="http://lambda.gsfc.nasa.gov/product/cobe">COBE</a>
+                  <a href="http://space.gsfc.nasa.gov/astro/cobe" target="_top">COBE</a>
 
                   data, and any distribution based on the symmetries of the icosahedron).
                 </li>
@@ -195,7 +196,7 @@ as can be seen from the <a href="resources.php">Resources</a> and <a href="galle
 			<ul>
 			<li>
 			routines to manipulate and visualize the 
-			<a href="http://fits.gsfc.nasa.gov/">FITS</a>
+			<a href="http://fits.gsfc.nasa.gov/" target="_top">FITS</a>
 			files generally used for I/O
                 	</li>
                 	<!-- br -->
