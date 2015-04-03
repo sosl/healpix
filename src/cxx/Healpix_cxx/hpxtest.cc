@@ -281,6 +281,32 @@ void check_swap_scheme()
     }
   }
 
+void check_issue_229 (Healpix_Ordering_Scheme scheme)
+  {
+  cout << "checking issue #229" << endl;
+  int order=8;
+  Healpix_Map<bool> map (order,scheme);
+  map.fill(false);
+  Healpix_Map<vec3> vmap(order,scheme);
+  for (int m=0; m<vmap.Npix(); ++m)
+    vmap[m]=vmap.pix2vec(m);
+  rangeset<int> pixset;
+  pointing ptg(halfpi-0.1,0);
+  double rad=0.1;
+  map.query_disc(ptg,rad,pixset);
+  vec3 vptg=ptg;
+  double cosrad=cos(rad);
+  for (tsize j=0; j<pixset.size(); ++j)
+    for (int i=pixset.ivbegin(j); i<pixset.ivend(j); ++i)
+      map[i] = true;
+  for (int i=0; i<map.Npix(); ++i)
+    {
+    bool inside = dotprod(vmap[i],vptg)>cosrad;
+    if (inside^map[i])
+      cout << "  PROBLEM: issue 229" << endl;
+    }
+  }
+
 void check_query_disc_strict (Healpix_Ordering_Scheme scheme)
   {
   cout << "testing whether all pixels found by query_disc() really" << endl
@@ -941,6 +967,8 @@ int main(int argc, const char **argv)
   check_swap_scheme();
   check_query_disc_strict(RING);
   check_query_disc_strict(NEST);
+  check_issue_229(RING);
+  check_issue_229(NEST);
   check_query_disc<int>();
   check_query_disc<int64>();
   check_query_polygon<int>();
