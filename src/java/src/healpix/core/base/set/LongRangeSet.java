@@ -469,9 +469,9 @@ public class LongRangeSet implements Externalizable, Iterable<Long>{
      */
     public LongRangeSet intersect(LongRangeSet rs) {
     	if(isEmpty())
-    		return rs;
+    		return LongRangeSetBuilder.EMPTY;
     	if(rs.isEmpty())
-    		return this;
+    		return LongRangeSetBuilder.EMPTY;
     	if(first()>rs.last() || last()<rs.first())
     		return LongRangeSetBuilder.EMPTY;
 
