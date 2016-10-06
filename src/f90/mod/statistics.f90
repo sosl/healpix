@@ -37,6 +37,8 @@ module statistics
   ! EH, IAP, 2010-06-25: tstats, compute_statistics and print_statistics now
   !        support I8B variables, but median does not
   ! EH, IAP, 2015-07-31: replaced 2 with 2_i4b
+  ! EH, IAP, 2016-10-06: median edited to treat properly 
+  !                 empty (or totally flagged-out) data set
   !---------------------------------
   use healpix_types
   use misc_utils, only: assert
@@ -361,13 +363,18 @@ contains
     endif
     
     ! find median value
-    if (do_even .and. mod(ngood,2_i4b) == 0) then
-       call indmed( gdata, j)
-       call indmed(-gdata, k)
-       med = 0.5_KMAP * (gdata(j) + gdata(k))
+    if (ngood > 0) then
+       if (do_even .and. mod(ngood,2_i4b) == 0) then
+          call indmed( gdata, j)
+          call indmed(-gdata, k)
+          med = 0.5_KMAP * (gdata(j) + gdata(k))
+       else
+          call indmed(gdata, j)
+          med = gdata(j)
+       endif
     else
-       call indmed(gdata, j)
-       med = gdata(j)
+       med = 0.0_SP
+       if (do_bad) med = badval
     endif
 
     ! MR 2006-02-08: avoid memory leak
@@ -424,13 +431,18 @@ contains
     endif
     
     ! find median value
-    if (do_even .and. mod(ngood,2_i4b) == 0) then
-       call indmed( gdata, j)
-       call indmed(-gdata, k)
-       med = 0.5_KMAP * (gdata(j) + gdata(k))
+    if (ngood > 0) then
+       if (do_even .and. mod(ngood,2_i4b) == 0) then
+          call indmed( gdata, j)
+          call indmed(-gdata, k)
+          med = 0.5_KMAP * (gdata(j) + gdata(k))
+       else
+          call indmed(gdata, j)
+          med = gdata(j)
+       endif
     else
-       call indmed(gdata, j)
-       med = gdata(j)
+       med = 0.0_DP
+       if (do_bad) med = badval
     endif
 
     ! MR 2006-02-08: avoid memory leak
