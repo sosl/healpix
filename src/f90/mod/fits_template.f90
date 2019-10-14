@@ -1147,7 +1147,8 @@ subroutine input_map8_KLOAD(filename, map, npixtot, nmaps, &
           stn = card(6:7)
           read(stn,'(i2)') itn
           ! discard at their original location:
-          call ftdkey(unit,card(1:6),status)  !         old TTYPEi
+          !!!!!!!call ftdkey(unit,card(1:6),status)  !         old TTYPEi 2019-10-14
+          call ftdkey(unit,'TTYPE'//stn,status)  !         old TTYPEi
           status = 0
           call ftdkey(unit,'TFORM'//stn,status) !           TFORMi
           status = 0
