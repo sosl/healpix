@@ -61,6 +61,7 @@
 # 2020-01-06: added missing space in whereisCmd
 # 2020-01-14: removed spurious \r in a some comments
 # 2020-01-23: removed bashism, improved FITSDIR behavior
+# 2020-02-24: fixed typo in dealing with shared/dynamic Healpix/F90 library
 #=====================================
 #=========== General usage ===========
 #=====================================
@@ -2351,7 +2352,7 @@ f90_shared () {
     if [ `isTrue ${F_SHARED}` -eq 1 ]; then
 	echoLn " (y|n) [y]: "
 	read answer
-	[ `isFalse $[answer}` -eq 1 ] && DO_F90_SHARED=0  || DO_F90_SHARED=1
+	[ `isFalse ${answer}` -eq 1 ] && DO_F90_SHARED=0  || DO_F90_SHARED=1
     else
 	echoLn " (y|n) [n]: "
 	read answer
@@ -2362,7 +2363,7 @@ f90_shared () {
 #     echo "F_SHARED =  ${F_SHARED}"
 #     echo "answer=${answer}."  
 #     echo "DO_F90_SHARED =  ${DO_F90_SHARED}"
-#     #echo `isTrue ${answer}` `isFalse $[answer}`
+#     #echo `isTrue ${answer}` `isFalse ${answer}`
 #     echo "============================"
     if [ ${DO_F90_SHARED} -eq 1 ]; then
 	case $OS in
