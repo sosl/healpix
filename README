@@ -1,3 +1,7 @@
+This is cloned from sourceforge to store an old modification I made to this code during my PhD. Starting from 3.11, I added Lambert equal area projection and cubehelix colour scheme. See feature/lambert_equal_area for these changes.
+
+Original readme:
+
 HEALPix 
 
 Hierarchical Equal Area isoLatitude Pixelation of the sphere
