@@ -97,7 +97,7 @@ void pro_mollw (const Healpix_Map<float> &map, double lon0, double lat0,
   double xc=(xsize-1)/2., yc=(ysize-1)/2.;
 
   rotmatrix rot;
-  rot.Make_CPAC_Euler_Matrix(0,-lat0,-lon0);
+  rot.Make_CPAC_Euler_Matrix(lon0,-lat0,0);
 
   minv=1e30;
   maxv=-1e30;
@@ -153,6 +153,122 @@ void pro_gno (const Healpix_Map<float> &map, double lon0, double lat0,
       }
   }
 
+// Lambert azimuthal equal area projection
+void pro_lamb (const Healpix_Map<float> &map, double lon0, double lat0,
+		int xsize, arr2<float> &img, float &minv, float &maxv,
+		bool smooth, bool oplot, vec3 mean_Stokes, vec3 centre_proj, double &oplot_i1, double &oplot_j1, double &oplot_i2, double &oplot_j2 )
+{
+  int ysize = xsize / 2.;
+  img.alloc(xsize,ysize);
+  img.fill(-1e35);
+
+  // distance of mean vector from the current pointing
+  double mean_dist_h1 = 2.0, anti_mean_dist_h1 = 0.0;
+  double mean_dist_h2 = 2.0, anti_mean_dist_h2 = 0.0;
+  double rho_mean_h1 = 3.0, rho_anti_h1 = 3.0;
+  double rho_mean_h2 = 3.0, rho_anti_h2 = 3.0;
+  double oplot_i1_h1, oplot_i2_h1, oplot_j1_h1, oplot_j2_h1;
+  double oplot_i1_h2, oplot_i2_h2, oplot_j1_h2, oplot_j2_h2;
+
+  bool meridian = false;
+  double meridian_tolerance = map.max_pixrad();
+  double map_max = map.absmax();
+
+  rotmatrix rot;
+  vec3 mean_Stokes_rot;
+
+  int mean_Stokes_transform = 1;
+  int mean_Stokes_flip = 1;
+
+  if ( mean_Stokes.x == 0 && mean_Stokes.y == 0 && mean_Stokes.z == 0 )
+  {
+    //cerr << "No mean Stokes provided" << endl;
+    mean_Stokes.z = 1.0;
+  }
+
+  minv=1e30;
+  maxv=-1e30;
+  if ( oplot )
+    cerr << " Received Stokes: " << mean_Stokes.x << " " << mean_Stokes.y << " " << mean_Stokes.z << endl;
+  for (unsigned hemisphere = 0; hemisphere <= 1; hemisphere++ )
+  {
+    //cerr << "Dealing with hemisphere " << hemisphere << " " << xsize<< endl;
+    double xc = ( xsize - 1) / 4., yc = (ysize -1) / 2.;
+    //rot.Make_CPAC_Euler_Matrix( ( hemisphere == 0 ? lon0 : (lon0 + pi) ), ( hemisphere == 0 ? lat0 : -pi-lat0 ) ,0);
+    if ( centre_proj.x != 0.0 || centre_proj.y != 0.0 )
+    {
+      //cerr << "creating rotation matrix from centre Q,U,V" << endl;
+      //cerr << "Axes:" << endl << "centre_proj: (" << centre_proj.x << ";" << centre_proj.y << ";" << centre_proj.z << ")" << endl;
+      //cerr << "mean_Stokes: (" << mean_Stokes.x << ";" << mean_Stokes.y << ";" << mean_Stokes.z << ")" << endl;
+      vec3 axis = crossprod( centre_proj, mean_Stokes );
+      //cerr << "Axis: (" << axis.x << ";" << axis.y << ";" << axis.z << ")" << endl;
+      double angle = acos( dotprod( centre_proj, mean_Stokes) );
+      //cerr << "Angle: " << angle << " " << angle * 180.0 / 3.14 << endl;
+      rot.Make_Axis_Rotation_Transform( axis, -angle );
+      //cerr << "creating rotation matrix from centre Q,U,V" << endl;
+      if ( (lat0 != 0.0 || lon0 != 0.0 ) ) {
+	cerr << "WARNING: Both lat/lon and centre Q,U,V provided, defaulting to lat/long values" << endl;
+      }
+    }
+    else {
+      rot.Make_CPAC_Euler_Matrix( 0, -(90.*degr2rad-lat0), lon0 );
+      rot.Transpose();
+      //cerr << "creating rotation matrix from lat " << rad2degr * lat0 << " and lon " << rad2degr * lon0 << endl;
+    }
+    //rot.Transpose();
+    for (tsize i=0 + (hemisphere == 0 ? 0 : xsize / 2.) ; i< ( hemisphere == 0  ? 0.5 : 1.0 ) * img.size1(); ++i)
+      for (tsize j=0; j<img.size2(); ++j)
+      {
+	meridian = false;
+	// x y centered on xc,yc with 2% of space on the edge, normalised by xc (yc):
+	double u = 2 * (i-xc-( hemisphere == 0 ? 0 : xsize/ 2 ))/(xc/1.02);
+	double v = 2 * (j-yc)/(yc/1.02);
+	//cerr << "IJ<->UV " << i << " " << j << " " << u << " " << v << " " << hemisphere << endl;
+	double rho = sqrt( u*u+v*v ) / sqrt(2); // division by sqrt(2) so that the map extends onto the whole image, despite interrupting at the equator.
+	// check the pixel falls within the map
+	// sqrt(2) because the whole projection extends to radius 2 (both hemispheres) but we want to interupt at the equator
+	bool mask = ( rho < sqrt(2) );
+	if (mask)
+	{
+	  vec3 pnt, pnt_rot;
+	  //pnt.Set( sqrt(1- rho*rho / 4) * u * ( 1.0 ) , sqrt(1-rho*rho/4) * v * ( -1.0 ), (-1 + rho*rho / 2 ) ); 
+	  if ( hemisphere == 0 ) // north pole at the centre
+	    pnt.Set( sqrt(1- rho*rho / 4) * u * ( 1.0 ) , sqrt(1-rho*rho/4) * v * ( -1.0 ), (1 - rho*rho / 2 ) ); 
+	  else 
+	    pnt.Set( sqrt(1- rho*rho / 4) * u * ( 1.0 ) , sqrt(1-rho*rho/4) * v * ( -1.0 ), (-1 + rho*rho / 2 ) ); 
+	  pnt_rot = rot.Transform(pnt);
+	  // check if we are near one of the meridians to be plotted:
+	  pointing meridian_point( pnt_rot );
+	  double meridian_scale = 0.08;
+	  double threshold = meridian_tolerance * meridian_scale / sin( meridian_point.theta );
+	  if ( fabs( meridian_point.phi ) < threshold ||
+			  fabs ( meridian_point.phi - 3.14 / 2. ) < threshold ||
+			  fabs ( meridian_point.phi - 3.14 ) < threshold ||
+			  fabs ( meridian_point.phi - 3. / 2. * 3.14 ) < threshold ||
+			  fabs ( meridian_point.phi - 2 * 3.14 ) < threshold )
+	    img[i][j] = map_max;
+	  // Plot the north pole
+	  else if ( fabs(pnt_rot.z - pnt_rot.Length()) < 0.002 )
+	  {
+	    img[i][j] = map_max;
+	  }
+	  else
+	  {
+	    if (smooth)
+	      img[i][j] = map.interpolated_value(pnt_rot);
+	    else
+	      img[i][j] = map[map.ang2pix(pnt_rot)];
+	    if (!approx<double>(img[i][j],Healpix_undef))
+	    {
+	      if (img[i][j]<minv) minv=img[i][j];
+	      if (img[i][j]>maxv) maxv=img[i][j];
+	    } //undefined value
+	  } // away from meridian
+	} // actions for pixels within map
+      } // loop through pixels
+  } // loop through hemispheres
+} // pro_lamb
+
 void colorbar (LS_Image &img, const Palette &pal, int xmin, int xmax,
   int ymin, int ymax, bool flippal, const arr<double> &newpos)
   {
@@ -197,7 +313,8 @@ int map2tga_module (int argc, const char **argv)
     "  map2tga <input file> <output file> [-sig <int>] [-pal <int>]\n"
     "    [-xsz <int>] [-bar] [-log] [-asinh] [-lon <float>] [-lat <float>]\n"
     "    [-mul <float>] [-add <float>] [-min <float>] [-max <float>]\n"
-    "    [-res <float>] [-title <string>] [-flippal] [-gnomonic]\n"
+    "    [-res <float>] [-title <string>] [-flippal] [-cubehelix] [-gnomonic]\n"
+    "    [-lambert] [-oplot[Q,U,V] [Q,U,V]] [-gnomonic]\n"
     "    [-interpol] [-equalize] [-viewer <viewer>]\n\n");
 
   safe_ptr<paramfile> params;
@@ -213,6 +330,11 @@ int map2tga_module (int argc, const char **argv)
       dict["pro"]="gno";
       dict.erase("gnomonic");
       }
+    if ( dict.find("lambert")!=dict.end())
+    {
+      dict["pro"]="lam";
+      dict.erase("lambert");
+    }
     params = new paramfile(dict,false);
     }
   else
@@ -239,8 +361,41 @@ int map2tga_module (int argc, const char **argv)
   double res = arcmin2rad*params->find<double>("res",1);
   string title = params->find<string>("title","");
   string viewer = params->find<string>("viewer","");
-  bool mollpro = (params->find<string>("pro","")!="gno");
   bool interpol = params->find<bool>("interpol",false);
+  // modified / new:
+  bool mollpro = (params->find<string>("pro","")!="gno" && params->find<string>("pro","")!="lam");
+  bool lambpro = (params->find<string>("pro","")=="lam");
+  bool gnompro = (params->find<string>("pro","")=="gno");
+  // mean Stokes Q U V
+  double oplot_Q = params->find<float>("oplot_Q",0.0);
+  double oplot_U = params->find<float>("oplot_U",0.0);
+  double oplot_V = params->find<float>("oplot_V",1.0);
+  vec3 mean_Stokes( 0.0, 0.0, 0.0 );
+  // centre Stokes Q U V
+  double centre_Q = params->find<float>("centre_Q",0.0);
+  double centre_U = params->find<float>("centre_U",0.0);
+  double centre_V = params->find<float>("centre_V",1.0);
+  vec3 centre_proj( 0.0, 0.0, 0.0 );
+  // auxillary vars, corresponding i and j of the image array for the mean and -mean vector
+  double oplot_i1, oplot_j1, oplot_i2, oplot_j2;
+  bool oplot = false;
+  bool cubehelix = params->find<bool>("cubehelix",true);
+
+  if ( oplot_Q != 0.0 || oplot_U != 0.0 )
+  {
+    cerr << "KABOOM mean_Stokes" << endl;
+    mean_Stokes.Set(oplot_Q, oplot_U, oplot_V );
+    mean_Stokes.Normalize();
+    oplot = true;
+  }
+
+  if ( centre_Q != 0.0 || centre_U != 0.0 || centre_V != 1.0 )
+  {
+    cerr << "KABOOM centre_proj" << endl;
+    centre_proj.Set(centre_Q, centre_U, centre_V );
+    centre_proj.Normalize();
+  }
+
 
   Healpix_Map<float> map(0,RING);
   read_Healpix_map_from_fits(infile,map,colnum,2);
@@ -263,8 +418,20 @@ int map2tga_module (int argc, const char **argv)
 
   arr2<float> imgarr;
   float minv, maxv;
-  mollpro ? pro_mollw (map,lon0,lat0,xres,imgarr,minv,maxv,interpol) :
-            pro_gno (map,lon0,lat0,xres,res,imgarr,minv,maxv,interpol);
+  if ( mollpro ) 
+    pro_mollw (map,lon0,lat0,xres,imgarr,minv,maxv,interpol);
+  else if ( gnompro )
+    pro_gno (map,lon0,lat0,xres,res,imgarr,minv,maxv,interpol);
+  else if ( lambpro )
+    pro_lamb (map,lon0,lat0,xres,imgarr,minv,maxv,interpol, oplot, mean_Stokes, centre_proj, oplot_i1, oplot_j1, oplot_i2, oplot_j2 );
+  else
+  {
+    cerr << "Choose a valid projection" << endl;
+    exit(-1);
+  }
+
+  if (oplot)
+    cerr << "Chosen pixels: (" << oplot_i1 << ", " << oplot_j1 << ") and (" << oplot_i2 << ", " << oplot_j2 << ")" << endl;
 
   arr<double> newpos;
   if (eqflag) histo_eq(imgarr,minv,maxv,newpos);
@@ -286,23 +453,52 @@ int map2tga_module (int argc, const char **argv)
   pal.setPredefined(palnr);
   if (title != "")
     img.annotate_centered(xsz/2,25*scale,Colour(0,0,0),title,scale);
+  int mean_mark_size = 20;
   for (tsize i=0; i<imgarr.size1(); ++i)
     for (tsize j=0; j<imgarr.size2(); ++j)
-      {
+    {
       if (imgarr[i][j]>-1e32)
-        {
+      {
         Colour c(0.5,0.5,0.5);
         if (!approx<double>(imgarr[i][j],Healpix_undef))
-          {
+        {
           int col = int((imgarr[i][j]-minv)/(maxv-minv)*256);
           col = min(255,max(col,0));
           float colfrac = (imgarr[i][j]-minv)/(maxv-minv);
           if (flippal) colfrac = 1-colfrac;
-          c = pal.Get_Colour(colfrac);
+          if (cubehelix )
+            c = pal.Get_Colour_Cubehelix(colfrac);
+          else
+            c = pal.Get_Colour(colfrac);
+        }
+        // draw border:
+        if ( pro_lamb && cubehelix && flippal )
+        {
+          for ( unsigned hemisphere = 0; hemisphere <= 1; hemisphere++ )
+          {
+            double xc = ( imgarr.size1()- 1) / 4., yc = (imgarr.size2()-1) / 2.;
+            double u = 2 * (i-xc-( hemisphere == 0 ? 0 : imgarr.size1()/ 2 ))/(xc/1.02);
+            double v = 2 * (j-yc)/(yc/1.02);
+            double rho = sqrt( u*u+v*v ) / sqrt(2);
+            double border_size = 0.01;
+            if ( rho < sqrt(2) + border_size && rho > sqrt(2) - border_size )
+            {
+              c = Colour(0., 0., 0. );
+            }
           }
-        img.put_pixel(i,yofs-j-1,c);
+        }
+        if ( !oplot || ( (pow(i - oplot_i1, 2) + pow(j - oplot_j1, 2) > mean_mark_size && (pow(i - oplot_i2, 2) + pow(j - oplot_j2, 2) > mean_mark_size ) ) ) )
+        {
+          img.put_pixel(i,yofs-j-1,c);
+        }
+        else
+        {
+          Colour a((pow(i - oplot_i1, 2) + pow(j-oplot_j1, 2) > mean_mark_size) ? 1.0 : 0.0, (pow(i - oplot_i1, 2) + pow(j-oplot_j1, 2) > mean_mark_size) ? 1.0 : 0.0, (pow(i - oplot_i1, 2) + pow(j-oplot_j1, 2) > mean_mark_size ? 1.0 : 0.0 ) );
+          img.put_pixel(i, yofs-j-1, a);
         }
       }
+
+    }
 
   if (bar)
     {

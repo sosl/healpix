@@ -231,6 +231,7 @@ template<typename T> class Healpix_Map: public Healpix_Base
 
         This method is instantiated for \a float and \a double only. */
     void minmax (T &Min, T &Max) const;
+    void minmax (T &Min, T &Max, int &min_pix, int &max_pix) const;
 
     /*! Swaps the contents of two Healpix_Map objects. */
     void swap (Healpix_Map &other)

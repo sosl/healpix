@@ -88,3 +88,27 @@ template<typename T> void Healpix_Map<T>::minmax (T &Min, T &Max) const
 
 template void Healpix_Map<float>::minmax (float &Min, float &Max) const;
 template void Healpix_Map<double>::minmax (double &Min, double &Max) const;
+
+template<typename T> void Healpix_Map<T>::minmax (T &Min, T &Max, int &min_pix, int &max_pix ) const
+{
+  Min = T(1e30); Max = T(-1e30);
+  min_pix = -1;
+  max_pix = -1;
+  for (int m=0; m<npix_; ++m)
+  {
+    T val = map[m];
+    if (!approx<double>(val,Healpix_undef))
+    {
+      if (val>Max) {
+	Max=val;
+	max_pix = m;
+      }
+      if (val<Min) {
+	Min=val;
+      }
+    }
+  }
+}
+
+template void Healpix_Map<float>::minmax (float &Min, float &Max, int &min_pix, int &max_pix) const;
+template void Healpix_Map<double>::minmax (double &Min, double &Max, int &min_pix, int &max_pix) const;
